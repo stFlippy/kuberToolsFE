@@ -2,6 +2,7 @@ import { useState } from "react";
 import DropdownMenu from "./DropdownMenu";
 import LogsModal from "./LogsModal";
 import YamlModal from "./YamlModal";
+import PatchModal from "./PatchModal";
 import { restartPod } from "../../../api/podsApi";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -13,6 +14,7 @@ type Props = {
 function PodCard({ pod }: Props) {
   const [showLogs, setShowLogs] = useState(false);
   const [showYaml, setShowYaml] = useState(false);
+  const [showPatch, setShowPatch] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -68,6 +70,16 @@ function PodCard({ pod }: Props) {
               >
                 YAML
               </div>
+              <div
+                style={styles.menuItem}
+                onClick={() => {
+                  setShowPatch(true);
+                  setShowLogs(false);
+                  setShowYaml(false);
+                }}
+              >
+                Patch
+              </div>
             </>
           }
         >
@@ -93,6 +105,13 @@ function PodCard({ pod }: Props) {
           namespace={pod.namespace}
           podName={pod.name}
           onClose={() => setShowYaml(false)}
+        />
+      )}
+      {showPatch && (
+        <PatchModal
+          namespace={pod.namespace}
+          podName={pod.name}
+          onClose={() => setShowPatch(false)}
         />
       )}
     </div>

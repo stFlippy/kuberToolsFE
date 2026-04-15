@@ -25,7 +25,7 @@ export const getPodLogs = async (namespace: string, podName: string) => {
 
   if (!res.ok) throw new Error("Failed to fetch logs");
 
-  return res.json(); // 🔥 ВАЖНО
+  return res.json();
 };
 
 export const getPodYaml = async (namespace: string, podName: string) => {
@@ -37,3 +37,22 @@ export const getPodYaml = async (namespace: string, podName: string) => {
 
   return res.text();
 };
+
+export async function patchPodYaml(
+  namespace: string,
+  podName: string,
+  body: string
+) {
+  const res = await fetch(
+    `/api/v1/pods/yaml?namespace=${namespace}&podName=${podName}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "text/plain",
+      },
+      body,
+    }
+  );
+
+  return res;
+}
