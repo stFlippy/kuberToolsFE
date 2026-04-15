@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getNamespaces } from "../../../api/toolsApi";
-import { getPods } from "../../../api/podsApi";
+import { getPods } from "../api/podsApi";
 
 export const useAllPods = () => {
   return useQuery({

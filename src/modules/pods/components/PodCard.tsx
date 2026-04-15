@@ -3,7 +3,7 @@ import DropdownMenu from "./DropdownMenu";
 import LogsModal from "./LogsModal";
 import YamlModal from "./YamlModal";
 import PatchModal from "./PatchModal";
-import { restartPod } from "../../../api/podsApi";
+import { restartPod } from "../api/podsApi";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 type Props = {

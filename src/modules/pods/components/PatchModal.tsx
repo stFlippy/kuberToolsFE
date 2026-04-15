@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Modal from "../components/Modal";
-import { patchPodYaml } from "../../../api/podsApi";
+import { patchPodYaml } from "../api/podsApi";
 
 type Props = {
   namespace: string;

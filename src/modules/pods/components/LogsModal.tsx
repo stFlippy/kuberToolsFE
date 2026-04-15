@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getPodLogs } from "../../../api/podsApi";
+import { getPodLogs } from "../api/podsApi";
 import Modal from "./Modal";
 
 type Props = {

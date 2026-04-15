@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getPodYaml } from "../../../api/podsApi";
+import { getPodYaml } from "../api/podsApi";
 import Modal from "./Modal";
 
 type Props = {
