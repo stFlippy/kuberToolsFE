@@ -39,7 +39,10 @@ function PodCard({ pod }: Props) {
       }
     >
       <div style={styles.header}>
-        <span style={styles.name}>{pod.name}</span>
+        {/* <span style={styles.name}>{pod.name}</span> */}
+        <span title={pod.name} style={styles.name}>
+          {pod.name}
+        </span>
 
         <DropdownMenu
           menu={
@@ -123,13 +126,21 @@ export default PodCard;
 function formatDate(dateStr: string) {
   const date = new Date(dateStr);
 
-  return date.toLocaleString(); // 🔥 локальное время
+  return date.toLocaleString(undefined, {
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 }
 
 const styles = {
   card: {
     background: "#1f2937",
-    padding: "12px",
+    padding: "6px",
     borderRadius: "10px",
     color: "white",
 
@@ -150,6 +161,7 @@ const styles = {
   header: {
     display: "flex",
     justifyContent: "space-between",
+    padding: "10px"
   },
   menuBtn: {
     cursor: "pointer",
