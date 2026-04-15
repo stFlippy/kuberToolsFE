@@ -1,0 +1,11 @@
+
+body {
+    margin: 0;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    background: radial-gradient(circle at 20% 30%, #1a2a6c, #2a4858, #000000);
+    color: white;
+}
+
+.container {
+    padding: 20px;
+}
