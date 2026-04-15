@@ -1,7 +1,7 @@
 
 type Pod = {
     name: string;
-    creationTimeStamp: string;
+    creationTimestamp: string;
     restartCount: string;
 }
 
@@ -15,7 +15,7 @@ function PodsTable({ pods }: Props) {
         <thead>
             <tr>
             <th>Name</th>
-            <th>creationTimeStamp</th>
+            <th>creationTimestamp</th>
             <th>restartCount</th>
             </tr>
         </thead>pod
@@ -24,7 +24,7 @@ function PodsTable({ pods }: Props) {
             {pods.map((pod) => (
             <tr key={pod.name}>
                 <td>{pod.name}</td>
-                <td>{pod.creationTimeStamp}</td>
+                <td>{pod.creationTimestamp}</td>
                 <td>{pod.restartCount}</td>
             </tr>
             ))}
