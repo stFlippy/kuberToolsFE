@@ -21,7 +21,8 @@
 
 .header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 5px;
   padding: 6px 2px;
 }
 
@@ -55,3 +56,14 @@
 
 .running { color: #30e81c; }
 .pending { color: #faea0a; }
+
+.card.selected {
+  border: 2px solid #2563eb; /* Яркая синяя рамка */
+  background-color: #1e293b; /* Чуть светлее фон */
+}
+
+.checkbox {
+  margin: 0px;
+  cursor: pointer;
+  accent-color: #2563eb; /* Цвет галочки */
+}

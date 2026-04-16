@@ -9,10 +9,12 @@ import styles from "./PodCard.module.css"
 
 type Props = {
   pod: any;
+  isSelected: boolean;
+  onToggle: () => void;
 };
 
 
-function PodCard({ pod }: Props) {
+function PodCard({ pod, isSelected, onToggle }: Props) {
   const [showLogs, setShowLogs] = useState(false);
   const [showYaml, setShowYaml] = useState(false);
   const [showPatch, setShowPatch] = useState(false);
@@ -56,11 +58,19 @@ function formatDate(dateStr: string) {
       }
     >
       <div className={styles.header}>
+        <input 
+          type="checkbox" 
+          checked={isSelected} 
+          onChange={() => {}} // onChange пустой, так как клик ловит вся карточка
+          className={styles.checkbox}
+        />
+
         <span title={pod.name} className={styles.name}>
           {pod.name}
         </span>
-
-        <DropdownMenu
+        
+        <div onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu
           menu={
             <>
               <div
@@ -101,9 +111,10 @@ function formatDate(dateStr: string) {
               </div>
             </>
           }
-        >
-          <span className={styles.menuBtn}>⋮</span>
-        </DropdownMenu>
+          >
+            <span className={styles.menuBtn}>⋮</span>
+          </DropdownMenu>
+        </div>
       </div>
 
       <div 
