@@ -5,6 +5,7 @@ import { getPods } from "../api/podsApi";
 export const useAllPods = () => {
   return useQuery({
     queryKey: ["allPods"],
+    refetchInterval: 2500,
     queryFn: async () => {
       const namespaces = await getNamespaces();
 

@@ -5,6 +5,7 @@ import YamlModal from "./YamlModal";
 import PatchModal from "./PatchModal";
 import { restartPod } from "../api/podsApi";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import styles from "./PodCard.module.css"
 
 type Props = {
   pod: any;
@@ -23,14 +24,30 @@ function PodCard({ pod }: Props) {
     mutationFn: () => restartPod(pod.namespace, pod.name),
     onSuccess: async () => {
         await new Promise((r) => setTimeout(r, 1000));
-        await queryClient.invalidateQueries({ queryKey: ["allPods"] });
+        await queryClient.invalidateQueries({ queryKey: ["allPods"],  });
       },
     }
   );
 
+
+function formatDate(dateStr: string) {
+  const date = new Date(dateStr);
+
+  return date.toLocaleString(undefined, {
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+;
+
   return (
     <div
-      style={styles.card}
+      className={styles.card}
       onMouseEnter={(e) =>
         (e.currentTarget.style.boxShadow = "0 8px 20px rgba(0,0,0,0.6)")
       }
@@ -38,8 +55,8 @@ function PodCard({ pod }: Props) {
         (e.currentTarget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.3)")
       }
     >
-      <div style={styles.header}>
-        <span title={pod.name} style={styles.name}>
+      <div className={styles.header}>
+        <span title={pod.name} className={styles.name}>
           {pod.name}
         </span>
 
@@ -47,14 +64,14 @@ function PodCard({ pod }: Props) {
           menu={
             <>
               <div
-                style={styles.menuItem}
+                className={styles.menuItem}
                 onClick={() => mutation.mutate()}
               >
                 Restart
               </div>
 
               <div
-                style={styles.menuItem}
+                className={styles.menuItem}
                 onClick={() => {
                   setShowLogs(true);
                   setShowYaml(false);
@@ -64,7 +81,7 @@ function PodCard({ pod }: Props) {
               </div>
 
               <div
-                style={styles.menuItem}
+                className={styles.menuItem}
                 onClick={() => {
                   setShowYaml(true);
                   setShowLogs(false);
@@ -73,7 +90,7 @@ function PodCard({ pod }: Props) {
                 YAML
               </div>
               <div
-                style={styles.menuItem}
+                className={styles.menuItem}
                 onClick={() => {
                   setShowPatch(true);
                   setShowLogs(false);
@@ -85,23 +102,22 @@ function PodCard({ pod }: Props) {
             </>
           }
         >
-          <span style={styles.menuBtn}>⋮</span>
+          <span className={styles.menuBtn}>⋮</span>
         </DropdownMenu>
       </div>
 
       <div 
         title={pod.status}
-        style={{
-          ...styles.status,
-          ...(pod.status === "Running" ? styles.running : {}),
-          ...(pod.status === "Pending" ? styles.pending : {}),
-          ...(pod.status === "Succeeded" ? styles.pending : {})
-        }}
-        >
+        className={`
+          ${styles.status} 
+          ${pod.status === "Running" ? styles.running : ""}
+          ${(pod.status === "Pending" || pod.status === "Succeeded") ? styles.pending : ""}
+        `}
+      >
         {pod.status}
       </div>
 
-      <div style={styles.info}>
+      <div className={styles.info}>
         <div>Restarts: {pod.restartCount}</div>
         <div>{formatDate(pod.creationTimestamp)}</div>
       </div>
@@ -133,78 +149,3 @@ function PodCard({ pod }: Props) {
 }
 
 export default PodCard;
-
-function formatDate(dateStr: string) {
-  const date = new Date(dateStr);
-
-  return date.toLocaleString(undefined, {
-    hour12: false,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
-
-const styles = {
-  card: {
-    background: "#1f2937",
-    padding: "6px",
-    borderRadius: "10px",
-    color: "white",
-
-    width: "220px",
-    height: "120px",
-
-    display: "flex",
-    flexDirection: "column" as const,
-    justifyContent: "space-between",
-
-    boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
-    transition: "transform 0.2s ease, box-shadow 0.2s ease",
-  },
-  cardHover: {
-    transform: "translateY(-3px)",
-    boxShadow: "0 6px 16px rgba(0,0,0,0.5)",
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    padding: "6px 2px"
-  },
-  menuBtn: {
-    cursor: "pointer",
-    padding: "7px"
-  },
-  info: {
-    fontSize: "12px",
-    opacity: 0.8,
-  },
-  name: {
-    maxWidth: "160px",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap" as const,
-  },
-  status: {
-    maxWidth: "160px",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap" as const,
-    fontSize: "80%",
-    color: "#cc0b08"
-  },
-  menuItem: {
-    padding: "8px",
-    cursor: "pointer",
-    borderRadius: "6px",
-  },
-  running:{
-    color: "#30e81c"
-  },
-  pending:{
-    color: "#faea0a"
-  }
-};

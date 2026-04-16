@@ -1,0 +1,57 @@
+/* Card.module.css */
+.card {
+  background: #1f2937;
+  padding: 6px;
+  border-radius: 10px;
+  color: white;
+  width: 220px;
+  height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Теперь hover пишется стандартно и чисто */
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 2px;
+}
+
+.menuBtn {
+  cursor: pointer;
+  padding: 7px;
+}
+
+.info {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.name, .status {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status {
+  font-size: 80%;
+  color: #cc0b08;
+}
+
+.menuItem {
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.running { color: #30e81c; }
+.pending { color: #faea0a; }
