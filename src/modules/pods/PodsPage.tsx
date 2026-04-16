@@ -4,17 +4,16 @@ import { useState } from "react";
 
 function PodsPage() {
   const { data = [], isLoading } = useAllPods();
+  const [selectedPodIds, setSelectedPodIds] = useState<string[]>([]);
 
   if (isLoading) return <div>Loading...</div>;
 
-  const [selectedPodIds, setSelectedPodIds] = useState<string[]>([]);
-  const togglePod = (podId: string) => {
-    setSelectedPodIds(prev =>
-      prev.includes(podId)
-        ? prev.filter(id => id !== podId)
-        : [...prev, podId]
-    );
-  };
+const togglePod = (ns: string, name: string) => {
+  const id = `${ns}/${name}`;
+  setSelectedPodIds(prev =>
+    prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+  );
+};
 
   // группировка по namespace
   const grouped = data.reduce((acc: any, pod: any) => {

@@ -49,13 +49,9 @@ function formatDate(dateStr: string) {
 
   return (
     <div
+    onClick={onToggle}
       className={styles.card}
-      onMouseEnter={(e) =>
-        (e.currentTarget.style.boxShadow = "0 8px 20px rgba(0,0,0,0.6)")
-      }
-      onMouseLeave={(e) =>
-        (e.currentTarget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.3)")
-      }
+
     >
       <div className={styles.header}>
         <input 

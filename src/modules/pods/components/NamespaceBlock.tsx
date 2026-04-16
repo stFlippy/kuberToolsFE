@@ -4,7 +4,7 @@ type Props = {
   namespace: string;
   pods: any[];
   selectedPodIds: string[];
-  onToggle: (podId: string) => void;
+  onToggle: (ns: string, name: string) => void; 
 };
 
 function NamespaceBlock({ namespace, pods, selectedPodIds, onToggle }: Props) {
@@ -15,10 +15,10 @@ function NamespaceBlock({ namespace, pods, selectedPodIds, onToggle }: Props) {
       <div style={styles.grid}>
         {pods.map((pod) => (
           <PodCard 
-            key={pod.name} 
-            pod={pod} 
-            isSelected={selectedPodIds.includes(pod.name)} 
-            onToggle={() => onToggle(pod.name)}
+            key={pod.name}
+            pod={pod}
+            isSelected={selectedPodIds.includes(`${namespace}/${pod.name}`)} 
+            onToggle={() => onToggle(namespace, pod.name)} 
           />
         ))}
       </div>
