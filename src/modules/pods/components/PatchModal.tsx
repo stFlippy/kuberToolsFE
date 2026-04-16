@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Modal from "../components/Modal";
+import Modal from "../../../shared/ui/Modal";
 import { patchPodYaml } from "../api/podsApi";
 
 type Props = {

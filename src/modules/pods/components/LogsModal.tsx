@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getPodLogs } from "../api/podsApi";
-import Modal from "./Modal";
+import Modal from "../../../shared/ui/Modal";
 
 type Props = {
   namespace: string;

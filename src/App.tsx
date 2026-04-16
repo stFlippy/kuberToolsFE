@@ -1,5 +1,5 @@
-// import { useQuery } from '@tanstack/react-query';
-// import { getNamespaces } from './api/testApi'
+
+
 import './App.css'
 import { router } from './router/router';
 import { RouterProvider } from 'react-router-dom';
