@@ -20,6 +20,8 @@ export default function DeploymentsPage() {
 const styles = {
   page: {
     padding: "20px",
-    color: "white",
+    background: "#020617",
+    minHeight: "100vh",
+    color: "#e5e7eb",
   },
 };

@@ -5,6 +5,7 @@ import {
 } from "../api/deploymentsApi";
 import { useQueryClient } from "@tanstack/react-query";
 import DeploymentYamlModal from "./DeploymentYamlModal";
+import styles from "./DeploymentRow.module.css"
 
 export default function DeploymentRow({
   deployment,
@@ -45,14 +46,22 @@ export default function DeploymentRow({
 
   return (
     <>
-      <div style={styles.row}>
-        <div style={styles.name}>{deployment.name}</div>
+      <div className={styles.row}>
+        <div className={styles.name}>{deployment.name}</div>
 
-        <button style={styles.button} onClick={restart}>
+        <button className={styles.button} onClick={restart}>
           Reload
         </button>
 
-        <div>
+        <div
+          style={{
+            color:
+              deployment.availableReplicas === deployment.replicas
+                ? "#22c55e"
+                : "#f59e0b",
+            fontWeight: "600",
+          }}
+        >
           {deployment.availableReplicas}/{deployment.replicas}
         </div>
 
@@ -85,7 +94,7 @@ export default function DeploymentRow({
         </button>
 
         <button
-          style={styles.button}
+          className={styles.button}
           onClick={() => setShowYaml(true)}
         >
           Edit YAML
@@ -102,54 +111,3 @@ export default function DeploymentRow({
     </>
   );
 }
-
-const styles = {
-  row: {
-    display: "grid",
-    gridTemplateColumns: "2fr 100px 100px 80px 80px 120px",
-    alignItems: "center",
-    gap: "10px",
-    padding: "10px",
-    background: "#1f2937",
-    borderRadius: "8px",
-    marginBottom: "8px",
-  },
-  name: { color: "white" },
-  ok: {
-    background: "#16a34a",
-    color: "white",
-    border: "none",
-    cursor: "pointer",
-  },
-  reload: {
-    background: "#f59e0b",
-    border: "none",
-    cursor: "pointer",
-  },
-  yaml: {
-    background: "#2563eb",
-    color: "white",
-    border: "none",
-    cursor: "pointer",
-  },
-  button: {
-    background: "#374151",
-    color: "#e5e7eb",
-    border: "none",
-    borderRadius: "6px",
-    padding: "6px 10px",
-    cursor: "pointer",
-    transition: "0.2s",
-    },
-
-  buttonHover: {
-    background: "#4b5563",
-  },
-  input: {
-    padding: "6px",
-    background: "#111827",
-    color: "white",
-    border: "1px solid #374151",
-    borderRadius: "6px",
-  },
-};
