@@ -2,10 +2,20 @@ import { useAllPods } from "./hooks/useAllPods";
 import NamespaceBlock from "./components/NamespaceBlock";
 import { useState } from "react";
 import { restartSelected } from "./api/podsApi";
+import { useEffect } from "react";
 
 function PodsPage() {
   const { data = [], isLoading } = useAllPods();
   const [selectedPodIds, setSelectedPodIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (data.length === 0) return;
+
+    const activeIds = new Set(data.map((pod: any) => `${pod.namespace}/${pod.name}`));
+
+    setSelectedPodIds((prev) => prev.filter((id) => activeIds.has(id)));
+
+  }, [data]);
 
   if (isLoading) return <div>Loading...</div>;
 
@@ -64,7 +74,7 @@ function PodsPage() {
           </button>
         )}
       </div>
-      
+
       <h3>Pods selected : {selectedPodIds.length}</h3>
 
       {Object.entries(grouped).map(([ns, pods]: any) => (

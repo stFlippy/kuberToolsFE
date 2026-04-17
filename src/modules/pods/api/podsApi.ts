@@ -57,7 +57,7 @@ export async function patchPodYaml(
   return res;
 }
 
-export async function restartSelected(body: string) {
+export async function restartSelected(body: Record<string, string[]>) {
   const res = await fetch(
     `/api/v1/pods/restartSelected`,
       {
