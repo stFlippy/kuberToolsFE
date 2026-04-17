@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { getDeployments } from "../api/deploymentsApi";
 
@@ -7,5 +6,7 @@ export function useDeployments(namespace: string) {
     queryKey: ["deployments", namespace],
     queryFn: () => getDeployments(namespace),
     enabled: !!namespace,
+    refetchInterval: 2500,
+    refetchOnWindowFocus: true,
   });
 }

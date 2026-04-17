@@ -5,6 +5,7 @@ import {
   getDeploymentYaml,
   patchDeploymentYaml,
 } from "../api/deploymentsApi";
+import { useQueryClient } from "@tanstack/react-query";
 
 type Props = {
   namespace: string;
@@ -19,6 +20,7 @@ export default function DeploymentYamlModal({
 }: Props) {
   const [yaml, setYaml] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const qc = useQueryClient();
 
   useEffect(() => {
     getDeploymentYaml(namespace, name).then(setYaml);
@@ -30,7 +32,18 @@ export default function DeploymentYamlModal({
         <textarea
           value={yaml}
           onChange={(e) => setYaml(e.target.value)}
-          style={styles.textarea}
+          style={{
+            width: "100%",
+            height: "70vh",
+            background: "#020617",
+            color: "#e2e8f0",
+            border: "1px solid #1f2937",
+            borderRadius: "8px",
+            padding: "12px",
+            fontFamily: "monospace",
+            fontSize: "14px",
+            resize: "none",
+          }}
         />
 
         <button
@@ -52,12 +65,13 @@ export default function DeploymentYamlModal({
             <button
               onClick={async () => {
                 await patchDeploymentYaml(namespace, name, yaml);
-                const newYaml = await getDeploymentYaml(
-                  namespace,
-                  name
-                );
-                setYaml(newYaml);
+
+                qc.invalidateQueries({
+                  queryKey: ["deployments", namespace],
+                });
+
                 setConfirmOpen(false);
+                onClose();
               }}
             >
               Да

@@ -1,35 +1,25 @@
-import { useState } from "react";
-import { useDeployments } from "./hooks/useDeployments";
-import DeploymentCard from "./components/DeploymentCard";
+import { useHosts } from "./hooks/useHosts";
+import HostBlock from "./components/HostBlock";
 
 export default function DeploymentsPage() {
-  const [namespace, setNamespace] = useState("test-tool-factory");
-
-  const { data, isLoading } = useDeployments(namespace);
+  const { data, isLoading } = useHosts();
 
   if (isLoading) return <div>Loading...</div>;
 
   return (
-    <div>
+    <div style={styles.page}>
       <h1>Deployments</h1>
 
-      <div style={styles.grid}>
-        {data?.map((d: any) => (
-          <DeploymentCard
-            key={d.name}
-            deployment={d}
-            namespace={namespace}
-          />
-        ))}
-      </div>
+      {data?.map((host: string) => (
+        <HostBlock key={host} host={host} />
+      ))}
     </div>
   );
 }
 
 const styles = {
-  grid: {
-    display: "flex",
-    gap: "12px",
-    flexWrap: "wrap" as const,
+  page: {
+    padding: "20px",
+    color: "white",
   },
 };

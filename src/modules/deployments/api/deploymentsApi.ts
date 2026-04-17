@@ -1,4 +1,15 @@
 
+export async function getHosts(): Promise<string[]> {
+  const res = await fetch(`/api/v1/getHosts`);
+  return res.json();
+}
+
+export async function getNamespaces(): Promise<string[]> {
+  const res = await fetch(`/api/v1/namespaces`);
+  return res.json();
+}
+
+
 export async function getDeployments(namespace: string) {
   const res = await fetch(
     `/api/v1/deployments?namespace=${namespace}`
@@ -22,7 +33,7 @@ export async function patchDeploymentYaml(
   body: string
 ) {
   return fetch(
-    `/api/v1/deployments/yaml?namespace=${namespace}&name=${name}`,
+    `/api/v1/deployments/yaml?namespace=${namespace}&deploymentName=${name}`,
     {
       method: "PATCH",
       headers: {
