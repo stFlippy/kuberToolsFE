@@ -57,7 +57,7 @@ function formatDate(dateStr: string) {
         <input 
           type="checkbox" 
           checked={isSelected} 
-          onChange={() => {}} // onChange пустой, так как клик ловит вся карточка
+          onChange={() => {}} 
           className={styles.checkbox}
         />
 
@@ -65,7 +65,7 @@ function formatDate(dateStr: string) {
           {pod.name}
         </span>
         
-        <div onClick={(e) => e.stopPropagation()}>
+        <div style={{ marginLeft: 'auto' }} onClick={(e) => e.stopPropagation()}>
           <DropdownMenu
           menu={
             <>

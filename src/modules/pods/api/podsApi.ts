@@ -56,3 +56,17 @@ export async function patchPodYaml(
 
   return res;
 }
+
+export async function restartSelected(body: string) {
+  const res = await fetch(
+    `/api/v1/pods/restartSelected`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body)
+      }
+  )
+  return res;
+}

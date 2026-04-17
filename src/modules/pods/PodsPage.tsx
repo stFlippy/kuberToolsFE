@@ -1,6 +1,7 @@
 import { useAllPods } from "./hooks/useAllPods";
 import NamespaceBlock from "./components/NamespaceBlock";
 import { useState } from "react";
+import { restartSelected } from "./api/podsApi";
 
 function PodsPage() {
   const { data = [], isLoading } = useAllPods();
@@ -8,12 +9,36 @@ function PodsPage() {
 
   if (isLoading) return <div>Loading...</div>;
 
-const togglePod = (ns: string, name: string) => {
-  const id = `${ns}/${name}`;
-  setSelectedPodIds(prev =>
-    prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-  );
-};
+  const togglePod = (ns: string, name: string) => {
+    const id = `${ns}/${name}`;
+    setSelectedPodIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleRestartSelected = async () => {
+    // 1. Собираем объект для отправки
+    const payload: Record<string, string[]> = {};
+    
+    selectedPodIds.forEach(id => {
+      const [ns, name] = id.split('/');
+      if (!payload[ns]) payload[ns] = [];
+      payload[ns].push(name);
+    });
+
+    // 2. Отправляем в API
+    try {
+      const response = await restartSelected(payload);
+      if (response.ok) {
+        alert("Запрос на рестарт отправлен");
+        setSelectedPodIds([]); // Очищаем выбор
+        // Если есть react-query, можно инвалидировать кеш:
+        // queryClient.invalidateQueries({ queryKey: ["allPods"] });
+      }
+    } catch (err) {
+      console.error("Ошибка рестарта:", err);
+    }
+  };
 
   // группировка по namespace
   const grouped = data.reduce((acc: any, pod: any) => {
@@ -25,9 +50,21 @@ const togglePod = (ns: string, name: string) => {
     return acc;
   }, {});
 
+  
   return (
     <div>
-      <h1>Pods</h1>
+      <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+        <h1>Pods</h1>
+        {selectedPodIds.length > 0 && (
+          <button 
+            onClick={handleRestartSelected}
+            style={{ padding: '8px 16px', background: '#ef4444', color: 'white', borderRadius: '6px', cursor: 'pointer', border: 'none' }}
+          >
+            Restart Selected ({selectedPodIds.length})
+          </button>
+        )}
+      </div>
+      
       <h3>Pods selected : {selectedPodIds.length}</h3>
 
       {Object.entries(grouped).map(([ns, pods]: any) => (
