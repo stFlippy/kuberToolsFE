@@ -12,4 +12,4 @@ export function useNamespaces(host: string) {
       refetchOnWindowFocus: true,
     }
   )
-}
+} 

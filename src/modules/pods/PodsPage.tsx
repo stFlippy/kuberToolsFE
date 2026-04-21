@@ -3,11 +3,15 @@ import NamespaceBlock from "./components/NamespaceBlock";
 import { useState } from "react";
 import { restartSelected } from "./api/podsApi";
 import { useEffect } from "react";
+import { useHosts } from "../../shared/ui/hooks/useHosts";
+import HostBlock from "./components/HostBlock";
 // import { useNamespaces } from "../../shared/ui/hooks/useNamespaces";
 
 function PodsPage() {
   const { data = [], isLoading } = useAllPods();
   const [selectedPodIds, setSelectedPodIds] = useState<string[]>([]);
+  const hosts = useHosts().data;
+  console.log(hosts)
 
   useEffect(() => {
     if (data.length === 0) return;
@@ -58,6 +62,7 @@ function PodsPage() {
     return acc;
   }, {});
 
+
   
   return (
     <div>
@@ -85,6 +90,21 @@ function PodsPage() {
           onToggle={togglePod}            // Передаем саму функцию клика
         />
       ))}
+      <div>
+        {
+          hosts?.map(
+            (host:string) => {
+              return (
+                <HostBlock
+                  key={ host }
+                  host= { host }
+                  />
+              )
+            }
+          )
+        }
+      </div>
+
       </div>
     </div>
   );

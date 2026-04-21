@@ -10,7 +10,7 @@ export default function HostBlock({ host }: any) {
     <div style={styles.host}>
         <h2 style={styles.title}>{host}</h2>
         {data?.map((namespace: any) => {
-              { console.log(host) }
+
               return <NamespaceBlock 
                 key={namespace} 
                 namespace={namespace}

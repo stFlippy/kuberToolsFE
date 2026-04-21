@@ -1,15 +1,23 @@
 
 
 import { useNamespaces } from "../../../shared/ui/hooks/useNamespaces";
+import NamespaceBlock from "./NamespaceBlock";
 
 
-export default function hostBlock(host: any) {
-    const namespaces = useNamespaces(host)
+export default function HostBlock({ host }: any) {
+    const { data } = useNamespaces(host)
 
     return (
-        <div
-        style={styles.title}>
-            {host}
+        <div style={styles.host}>
+            <h2 style={styles.title} > {host} </h2>
+            {
+                data?.map((namespace: any) => {
+                        return (
+                            <h3>{namespace}</h3>
+                        )
+                    }
+                )
+            }
         </div>
     )
 }
