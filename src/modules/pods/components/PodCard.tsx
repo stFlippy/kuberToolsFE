@@ -73,7 +73,7 @@ function formatDate(dateStr: string) {
                 className={styles.menuItem}
                 onClick={() => mutation.mutate()}
               >
-                Restart
+                Drop pod
               </div>
 
               <div

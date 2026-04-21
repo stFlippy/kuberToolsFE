@@ -1,4 +1,4 @@
-import { useHosts } from "./hooks/useHosts";
+import { useHosts } from "../../shared/ui/hooks/useHosts";
 import HostBlock from "./components/HostBlock";
 
 export default function DeploymentsPage() {

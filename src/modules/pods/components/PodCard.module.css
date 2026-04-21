@@ -50,9 +50,14 @@
 }
 
 .menuItem {
+
   padding: 8px;
   cursor: pointer;
   border-radius: 6px;
+}
+
+.menuItem:hover {
+  background: #374151;
 }
 
 .running { color: #30e81c; }

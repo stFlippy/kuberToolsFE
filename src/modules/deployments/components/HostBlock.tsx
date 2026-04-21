@@ -1,19 +1,27 @@
+
+
 import NamespaceBlock from "./NamespaceBlock";
-import { useNamespaces } from "../hooks/useNamespaces";
+import { useNamespaces } from "../../../shared/ui/hooks/useNamespaces";
 
 export default function HostBlock({ host }: any) {
-  const { data } = useNamespaces();
+  const { data } = useNamespaces(host);
 
   return (
     <div style={styles.host}>
         <h2 style={styles.title}>{host}</h2>
-
-        {data?.map((ns: string) => (
-        <NamespaceBlock key={ns} namespace={ns} />
-        ))}
+        {data?.map((namespace: any) => {
+              { console.log(host) }
+              return <NamespaceBlock 
+                key={namespace} 
+                namespace={namespace}
+              />
+            }
+          )
+        }
     </div>
   );
 }
+
 
 const styles = {
   host: {

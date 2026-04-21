@@ -3,6 +3,7 @@ import NamespaceBlock from "./components/NamespaceBlock";
 import { useState } from "react";
 import { restartSelected } from "./api/podsApi";
 import { useEffect } from "react";
+// import { useNamespaces } from "../../shared/ui/hooks/useNamespaces";
 
 function PodsPage() {
   const { data = [], isLoading } = useAllPods();
@@ -10,11 +11,8 @@ function PodsPage() {
 
   useEffect(() => {
     if (data.length === 0) return;
-
     const activeIds = new Set(data.map((pod: any) => `${pod.namespace}/${pod.name}`));
-
     setSelectedPodIds((prev) => prev.filter((id) => activeIds.has(id)));
-
   }, [data]);
 
   if (isLoading) return <div>Loading...</div>;
@@ -63,7 +61,9 @@ function PodsPage() {
   
   return (
     <div>
-      <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+      {/* <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}> */}
+
+      <div style={styles.page}>
         <h1>Pods</h1>
         {selectedPodIds.length > 0 && (
           <button 
@@ -73,7 +73,6 @@ function PodsPage() {
             Restart Selected ({selectedPodIds.length})
           </button>
         )}
-      </div>
 
       <h3>Pods selected : {selectedPodIds.length}</h3>
 
@@ -86,8 +85,18 @@ function PodsPage() {
           onToggle={togglePod}            // Передаем саму функцию клика
         />
       ))}
+      </div>
     </div>
   );
 }
 
 export default PodsPage;
+
+const styles = {
+  page: {
+    padding: "20px",
+    background: "#020617",
+    minHeight: "100vh",
+    color: "#e5e7eb",
+  },
+};

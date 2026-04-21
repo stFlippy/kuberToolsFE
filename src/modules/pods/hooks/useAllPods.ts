@@ -6,18 +6,23 @@ export const useAllPods = () => {
   return useQuery({
     queryKey: ["allPods"],
     refetchInterval: 2500,
+
     queryFn: async () => {
       const namespaces = await getNamespaces();
 
       const results = await Promise.all(
-        namespaces.map(async (ns) => {
-          const pods = await getPods(ns);
+        
+          namespaces.map(
+            async (namespace) => {
 
-          return pods.map((pod: any) => ({
-            ...pod,
-            namespace: ns,
-          }));
-        })
+              const pods = await getPods(namespace);
+
+              return pods.map((pod: any) => ({      
+                ...pod,
+                namespace: namespace,
+              }));
+            }
+        )
       );
 
       return results.flat();
