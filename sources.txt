@@ -1,0 +1,1647 @@
+==> ./modules/deployments/hooks/useDeployments.ts <==
+import { useQuery } from "@tanstack/react-query";
+import { getDeployments } from "../api/deploymentsApi";
+
+export function useDeployments(namespace: string) {
+  return useQuery({
+    queryKey: ["deployments", namespace],
+    queryFn: () => getDeployments(namespace),
+    enabled: !!namespace,
+    refetchInterval: 2500,
+    refetchOnWindowFocus: true,
+  });
+}
+==> ./modules/deployments/api/deploymentsApi.ts <==
+
+export async function getHosts(): Promise<string[]> {
+  const res = await fetch(`/api/v1/getHosts`);
+  return res.json();
+}
+
+export async function getNamespaces(): Promise<string[]> {
+  const res = await fetch(`/api/v1/namespaces`);
+  return res.json();
+}
+
+
+export async function getDeployments(namespace: string) {
+  const res = await fetch(
+    `/api/v1/deployments?namespace=${namespace}`
+  );
+  return res.json();
+}
+
+export async function getDeploymentYaml(
+  namespace: string,
+  name: string
+) {
+  const res = await fetch(
+    `/api/v1/deployments/yaml?namespace=${namespace}&deploymentName=${name}`
+  );
+  return res.text();
+}
+
+export async function patchDeploymentYaml(
+  namespace: string,
+  name: string,
+  body: string
+) {
+  return fetch(
+    `/api/v1/deployments/yaml?namespace=${namespace}&deploymentName=${name}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "text/plain",
+      },
+      body,
+    }
+  );
+}
+
+export async function setReplicas(
+  namespace: string,
+  name: string,
+  replicas: number
+) {
+  return fetch(
+    `/api/v1/deployments/setReplicas?namespace=${namespace}&deploymentName=${name}&replicasValue=${replicas}`
+  );
+}
+
+export async function restartNamespace(namespace: string) {
+  return fetch(
+    `/api/v1/deployments/restartNamespacedPods?namespace=${namespace}`
+  );
+}
+==> ./modules/deployments/components/DeploymentRow.module.css <==
+.row {
+  display: grid;
+  grid-template-columns: 2fr 90px 120px 80px 80px 120px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #1f2937;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  transition: 0.2s;
+}
+
+/* 🔥 hover теперь тут */
+.row:hover {
+  background: #374151;
+}
+
+.name {
+  color: white;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.button {
+  background: #374151;
+  color: #e5e7eb;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: 0.15s ease;
+}
+
+.button:hover {
+  background: #4b5563;
+}
+
+.button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.input {
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 6px;
+  color: white;
+  text-align: center;
+}
+
+/* статус */
+.statusOk {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.statusWarn {
+  color: #f59e0b;
+  font-weight: 600;
+}
+==> ./modules/deployments/components/NamespaceBlock.tsx <==
+import { useDeployments } from "../hooks/useDeployments";
+import DeploymentRow from "./DeploymentRow";
+
+export default function NamespaceBlock({ namespace }: any) {
+  const { data } = useDeployments(namespace);
+
+  return (
+    <div style={styles.block}>
+      <h3 style={styles.title}>{namespace}</h3>
+
+      {!data || data.length === 0 ? (
+        <div style={styles.empty}>empty namespace</div>
+      ) : (
+        data.map((d: any) => (
+          <DeploymentRow
+            key={d.name}
+            deployment={d}
+            namespace={namespace}
+          />
+        ))
+      )}
+    </div>
+  );
+}
+
+const styles = {
+  block: {
+    marginBottom: "20px",
+    padding: "12px",
+    borderRadius: "10px",
+    background: "#020617",
+    border: "1px solid #1f2937",
+  },
+  title: {
+    marginBottom: "10px",
+    fontSize: "14px",
+    color: "#9ca3af",
+  },
+  empty: {
+    padding: "10px",
+    background: "#1f2937",
+    borderRadius: "6px",
+    color: "#6b7280",
+    fontSize: "13px",
+  },
+};
+==> ./modules/deployments/components/DeploymentYamlModal.tsx <==
+
+import { useEffect, useState } from "react";
+import Modal from "../../../shared/ui/Modal";
+import {
+  getDeploymentYaml,
+  patchDeploymentYaml,
+} from "../api/deploymentsApi";
+import { useQueryClient } from "@tanstack/react-query";
+
+type Props = {
+  namespace: string;
+  name: string;
+  onClose: () => void;
+};
+
+export default function DeploymentYamlModal({
+  namespace,
+  name,
+  onClose,
+}: Props) {
+  const [yaml, setYaml] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    getDeploymentYaml(namespace, name).then(setYaml);
+  }, []);
+
+  return (
+    <>
+      <Modal title={`YAML: ${name}`} onClose={onClose}>
+        <textarea
+          value={yaml}
+          onChange={(e) => setYaml(e.target.value)}
+          style={{
+            width: "100%",
+            height: "70vh",
+            background: "#020617",
+            color: "#e2e8f0",
+            border: "1px solid #1f2937",
+            borderRadius: "8px",
+            padding: "12px",
+            fontFamily: "monospace",
+            fontSize: "14px",
+            resize: "none",
+          }}
+        />
+
+        <button
+          style={styles.button}
+          onClick={() => setConfirmOpen(true)}
+        >
+          Apply
+        </button>
+      </Modal>
+
+      {confirmOpen && (
+        <Modal
+          title="Confirm changes"
+          onClose={() => setConfirmOpen(false)}
+        >
+          <div style={{ color: "white" }}>
+            <p>Применить изменения?</p>
+
+            <button
+              onClick={async () => {
+                await patchDeploymentYaml(namespace, name, yaml);
+
+                qc.invalidateQueries({
+                  queryKey: ["deployments", namespace],
+                });
+
+                setConfirmOpen(false);
+                onClose();
+              }}
+            >
+              Да
+            </button>
+          </div>
+        </Modal>
+      )}
+    </>
+  );
+}
+
+const styles = {
+  textarea: {
+    width: "100%",
+    height: "80%",
+    background: "#020617",
+    color: "#e2e8f0",
+    fontFamily: "monospace",
+    padding: "12px",
+  },
+  button: {
+    marginTop: "10px",
+    padding: "10px",
+    background: "#2563eb",
+    color: "white",
+    border: "none",
+    cursor: "pointer",
+  },
+};
+==> ./modules/deployments/components/DeploymentRow.tsx <==
+import { useState } from "react";
+import {
+  setReplicas,
+  restartNamespace,
+} from "../api/deploymentsApi";
+import { useQueryClient } from "@tanstack/react-query";
+import DeploymentYamlModal from "./DeploymentYamlModal";
+import styles from "./DeploymentRow.module.css"
+
+export default function DeploymentRow({
+  deployment,
+  namespace,
+}: any) {
+  const [value, setValue] = useState("0");
+  const isSame = Number(value) === deployment.replicas;
+  const isDisabled = value === "0" || isSame;
+  const [showYaml, setShowYaml] = useState(false);
+  
+
+  const qc = useQueryClient();
+
+  const applyReplicas = async () => {
+    if (isDisabled) return;
+
+    if (!confirm("Применить новое количество реплик?")) return;
+
+    await setReplicas(namespace, deployment.name, Number(value));
+
+    setValue("0");
+
+    qc.invalidateQueries({
+      queryKey: ["deployments", namespace],
+    });
+  };
+
+
+
+  const restart = async () => {
+    if (!confirm("Перезапустить все pod'ы namespace?")) return;
+
+    await restartNamespace(namespace);
+    qc.invalidateQueries({
+      queryKey: ["deployments", namespace],
+    });
+  };
+
+  return (
+    <>
+      <div className={styles.row}>
+        <div className={styles.name}>{deployment.name}</div>
+
+        <button className={styles.button} onClick={restart}>
+          Reload
+        </button>
+
+        <div
+          style={{
+            color:
+              deployment.availableReplicas === deployment.replicas
+                ? "#22c55e"
+                : "#f59e0b",
+            fontWeight: "600",
+          }}
+        >
+          {deployment.availableReplicas}/{deployment.replicas}
+        </div>
+
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          style={{
+            padding: "6px",
+            background: "#111827",
+            color: "white",
+            border: "1px solid #374151",
+            borderRadius: "6px",
+          }}
+        />
+
+        <button
+          disabled={isDisabled}
+          onClick={applyReplicas}
+          style={{
+            background: "#374151",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            padding: "6px 10px",
+            cursor: isDisabled ? "not-allowed" : "pointer",
+            opacity: isDisabled ? 0.5 : 1,
+          }}
+        >
+          OK
+        </button>
+
+        <button
+          className={styles.button}
+          onClick={() => setShowYaml(true)}
+        >
+          Edit YAML
+        </button>
+      </div>
+
+      {showYaml && (
+        <DeploymentYamlModal
+          namespace={namespace}
+          name={deployment.name}
+          onClose={() => setShowYaml(false)}
+        />
+      )}
+    </>
+  );
+}
+
+==> ./modules/deployments/components/HostBlock.tsx <==
+
+
+import NamespaceBlock from "./NamespaceBlock";
+import { useNamespaces } from "../../../shared/ui/hooks/useNamespaces";
+
+export default function HostBlock({ host }: any) {
+  const { data } = useNamespaces(host);
+
+  return (
+    <div style={styles.host}>
+        <h2 style={styles.title}>{host}</h2>
+        {data?.map((namespace: any) => {
+
+              return <NamespaceBlock 
+                key={namespace} 
+                namespace={namespace}
+              />
+            }
+          )
+        }
+    </div>
+  );
+}
+
+
+const styles = {
+  host: {
+    background: "#020617",
+    border: "1px solid #1f2937",
+    borderRadius: "12px",
+    padding: "16px",
+    marginBottom: "24px",
+  },
+  title: {
+    marginBottom: "12px",
+    fontSize: "18px",
+    fontWeight: "600",
+  },
+};
+==> ./modules/deployments/DeploymentsPage.tsx <==
+import { useHosts } from "../../shared/ui/hooks/useHosts";
+import HostBlock from "./components/HostBlock";
+
+export default function DeploymentsPage() {
+  const { data, isLoading } = useHosts();
+
+  if (isLoading) return <div>Loading...</div>;
+
+  return (
+    <div style={styles.page}>
+      <h1>Deployments</h1>
+
+      {data?.map((host: string) => (
+        <HostBlock key={host} host={host} />
+      ))}
+    </div>
+  );
+}
+
+const styles = {
+  page: {
+    padding: "20px",
+    background: "#020617",
+    minHeight: "100vh",
+    color: "#e5e7eb",
+  },
+};
+==> ./modules/pods/hooks/useAllPods.ts <==
+import { useQuery } from "@tanstack/react-query";
+import { getNamespaces } from "../../../api/toolsApi";
+import { getPods } from "../api/podsApi";
+
+export const useAllPods = () => {
+  return useQuery({
+    queryKey: ["allPods"],
+    refetchInterval: 2500,
+
+    queryFn: async () => {
+      const namespaces = await getNamespaces();
+
+      const results = await Promise.all(
+        
+          namespaces.map(
+            async (namespace) => {
+
+              const pods = await getPods(namespace);
+
+              return pods.map((pod: any) => ({      
+                ...pod,
+                namespace: namespace,
+              }));
+            }
+        )
+      );
+
+      return results.flat();
+    },
+  });
+};
+==> ./modules/pods/PodsPage.tsx <==
+import { useState, useEffect } from "react";
+import { useHosts } from "../../shared/ui/hooks/useHosts";
+import HostBlock from "./components/HostBlock";
+import { restartSelected } from "./api/podsApi";
+
+function PodsPage() {
+  const { data: hosts = [], isLoading } = useHosts();
+
+  const [selectedPodIds, setSelectedPodIds] = useState<string[]>([]);
+  
+  useEffect(() => {
+    setSelectedPodIds((prev) =>
+      prev.filter((id) => {
+        const parts = id.split("/");
+        return parts.length === 3;
+      })
+    );
+  }, []);
+
+  if (isLoading) return <div>Loading...</div>;
+
+  const togglePod = (
+    host: string,
+    namespace: string,
+    podName: string
+  ) => {
+    const id = `${host}/${namespace}/${podName}`;
+
+    setSelectedPodIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((i) => i !== id)
+        : [...prev, id]
+    );
+  };
+
+  const handleDropSelected = async () => {
+    if (selectedPodIds.length === 0) return;
+
+    const confirmed = window.confirm(
+      "Подтвердить удаление выбранных pod?"
+    );
+
+    if (!confirmed) return;
+
+    const payload: Record<string, Record<string, string[]>
+      > = {};
+
+    selectedPodIds.forEach((id) => {
+      const [host, namespace, podName] = id.split("/");
+
+      if (!payload[host]) {
+        payload[host] = {};
+      }
+
+      if (!payload[host][namespace]) {
+        payload[host][namespace] = [];
+      }
+
+      payload[host][namespace].push(podName);
+    });
+
+    await restartSelected(payload);
+
+    setSelectedPodIds([]);
+  };
+
+  return (
+    <div style={styles.page}>
+      <h1 style={styles.title}>Pods</h1>
+
+      {selectedPodIds.length > 0 && (
+        <button
+          style={styles.restartButton}
+          onClick={handleDropSelected}
+        >
+          Drop Selected ({selectedPodIds.length})
+        </button>
+      )}
+
+      {hosts.map((host: string) => (
+        <HostBlock
+          key={host}
+          host={host}
+          selectedPodIds={selectedPodIds}
+          onToggle={togglePod}
+        />
+      ))}
+    </div>
+  );
+}
+
+export default PodsPage;
+
+const styles = {
+  page: {
+    padding: "20px",
+    background: "#020617",
+    minHeight: "100vh",
+    color: "#e5e7eb",
+  },
+
+  title: {
+    marginBottom: "24px",
+    fontSize: "28px",
+    fontWeight: "700",
+  },
+
+  restartButton: {
+    marginBottom: "20px",
+    padding: "10px 16px",
+    background: "#374151",
+    color: "white",
+    border: "1px solid #4b5563",
+    borderRadius: "8px",
+    cursor: "pointer",
+  },
+};
+==> ./modules/pods/api/podsApi.ts <==
+
+
+export const getPods = async (namespace: string) => {
+  const res = await fetch(
+    `/api/v1/pods?namespace=${namespace}`
+  );
+
+  if (!res.ok) throw new Error("Failed to fetch pods");
+
+  return res.json();
+};
+
+export const restartPod = async (namespace: string, podName: string) => {
+  const res = await fetch(
+    `/api/v1/pods/restartPod?namespace=${namespace}&podName=${podName}`
+  );
+
+  if (!res.ok) throw new Error("Failed to restart pod");
+};
+
+export const getPodLogs = async (namespace: string, podName: string) => {
+  const res = await fetch(
+    `/api/v1/pods/log?namespace=${namespace}&podName=${podName}`
+  );
+
+  if (!res.ok) throw new Error("Failed to fetch logs");
+
+  return res.json();
+};
+
+export const getPodYaml = async (namespace: string, podName: string) => {
+  const res = await fetch(
+    `/api/v1/pods/yaml?namespace=${namespace}&podName=${podName}`
+  );
+
+  if (!res.ok) throw new Error("Failed to fetch yaml");
+
+  return res.text();
+};
+
+export async function patchPodYaml(
+  namespace: string,
+  podName: string,
+  body: string
+) {
+  const res = await fetch(
+    `/api/v1/pods/yaml?namespace=${namespace}&podName=${podName}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "text/plain",
+      },
+      body,
+    }
+  );
+
+  return res;
+}
+
+export async function restartSelected(
+  body: Record<string, Record<string, string[]>>
+) {
+  const res = await fetch(
+    `/api/v1/pods/restartSelected`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    }
+  );
+
+  return res;
+}
+==> ./modules/pods/components/PodCard.tsx <==
+import { useState } from "react";
+import DropdownMenu from "./DropdownMenu";
+import LogsModal from "./LogsModal";
+import YamlModal from "./YamlModal";
+import PatchModal from "./PatchModal";
+import { restartPod } from "../api/podsApi";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import styles from "./PodCard.module.css"
+
+type Props = {
+  pod: any;
+  isSelected: boolean;
+  onToggle: () => void;
+};
+
+
+function PodCard({ pod, isSelected, onToggle }: Props) {
+  const [showLogs, setShowLogs] = useState(false);
+  const [showYaml, setShowYaml] = useState(false);
+  const [showPatch, setShowPatch] = useState(false);
+
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation(
+    {
+    mutationFn: () => restartPod(pod.namespace, pod.name),
+    onSuccess: async () => {
+        await new Promise((r) => setTimeout(r, 1000));
+        await queryClient.invalidateQueries({ queryKey: ["allPods"],  });
+      },
+    }
+  );
+
+
+function formatDate(dateStr: string) {
+  const date = new Date(dateStr);
+
+  return date.toLocaleString(undefined, {
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+;
+
+  return (
+    <div
+    onClick={onToggle}
+      className={styles.card}
+
+    >
+      <div className={styles.header}>
+        <input 
+          type="checkbox" 
+          checked={isSelected} 
+          onChange={() => {}} 
+          className={styles.checkbox}
+        />
+
+        <span title={pod.name} className={styles.name}>
+          {pod.name}
+        </span>
+        
+        <div style={{ marginLeft: 'auto' }} onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu
+          menu={
+            <>
+              <div
+                className={styles.menuItem}
+                onClick={() => mutation.mutate()}
+              >
+                Drop pod
+              </div>
+
+              <div
+                className={styles.menuItem}
+                onClick={() => {
+                  setShowLogs(true);
+                  setShowYaml(false);
+                }}
+              >
+                Logs
+              </div>
+
+              <div
+                className={styles.menuItem}
+                onClick={() => {
+                  setShowYaml(true);
+                  setShowLogs(false);
+                }}
+              >
+                YAML
+              </div>
+              <div
+                className={styles.menuItem}
+                onClick={() => {
+                  setShowPatch(true);
+                  setShowLogs(false);
+                  setShowYaml(false);
+                }}
+              >
+                Patch
+              </div>
+            </>
+          }
+          >
+            <span className={styles.menuBtn}>⋮</span>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      <div 
+        title={pod.status}
+        className={`
+          ${styles.status} 
+          ${pod.status === "Running" ? styles.running : ""}
+          ${(pod.status === "Pending" || pod.status === "Succeeded") ? styles.pending : ""}
+        `}
+      >
+        {pod.status}
+      </div>
+
+      <div className={styles.info}>
+        <div>Restarts: {pod.restartCount}</div>
+        <div>{formatDate(pod.creationTimestamp)}</div>
+      </div>
+
+      {showLogs && (
+        <LogsModal
+          namespace={pod.namespace}
+          podName={pod.name}
+          onClose={() => setShowLogs(false)}
+        />
+      )}
+
+      {showYaml && (
+        <YamlModal
+          namespace={pod.namespace}
+          podName={pod.name}
+          onClose={() => setShowYaml(false)}
+        />
+      )}
+      {showPatch && (
+        <PatchModal
+          namespace={pod.namespace}
+          podName={pod.name}
+          onClose={() => setShowPatch(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+export default PodCard;
+==> ./modules/pods/components/NamespaceBlock.tsx <==
+import { useQuery } from "@tanstack/react-query";
+import { getPods } from "../api/podsApi";
+import PodCard from "./PodCard";
+
+type Props = {
+  host: string;
+  namespace: string;
+  selectedPodIds: string[];
+  onToggle: (
+    host: string,
+    namespace: string,
+    podName: string
+  ) => void;
+};
+
+function NamespaceBlock({
+  host,
+  namespace,
+  selectedPodIds,
+  onToggle,
+}: Props) {
+  const { data: pods = [] } = useQuery({
+    queryKey: ["pods", namespace],
+    queryFn: () => getPods(namespace),
+    refetchInterval: 2500,
+    refetchOnWindowFocus: true,
+  });
+
+  return (
+    <div style={styles.container}>
+      <h3 style={styles.title}>{namespace}</h3>
+
+      {pods.length === 0 ? (
+        <div style={styles.empty}>
+          empty namespace
+        </div>
+      ) : (
+        <div style={styles.grid}>
+          {pods.map((pod: any) => (
+            <PodCard
+              key={pod.name}
+              pod={{
+                ...pod,
+                namespace,
+              }}
+              isSelected={selectedPodIds.includes(
+                `${host}/${namespace}/${pod.name}`
+              )}
+              onToggle={() =>
+                onToggle(host, namespace, pod.name)
+              }
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default NamespaceBlock;
+
+const styles = {
+  container: {
+    marginBottom: "20px",
+    padding: "12px",
+    borderRadius: "10px",
+    background: "#0f172a",
+    border: "1px solid #1f2937",
+  },
+
+  title: {
+    marginBottom: "12px",
+    fontSize: "14px",
+    color: "#9ca3af",
+    fontWeight: "600",
+  },
+
+  empty: {
+    padding: "12px",
+    background: "#1f2937",
+    borderRadius: "8px",
+    color: "#6b7280",
+    fontSize: "13px",
+  },
+
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, 220px)",
+    gap: "12px",
+  },
+};
+==> ./modules/pods/components/PatchModal.tsx <==
+import { useState } from "react";
+import Modal from "../../../shared/ui/Modal";
+import { patchPodYaml } from "../api/podsApi";
+
+type Props = {
+  namespace: string;
+  podName: string;
+  onClose: () => void;
+};
+
+export default function PatchModal({
+  namespace,
+  podName,
+  onClose,
+}: Props) {
+  const [value, setValue] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const handleSubmit = async () => {
+    await patchPodYaml(namespace, podName, value);
+    onClose();
+  };
+
+  return (
+    <Modal title={`Patch: ${podName}`} onClose={onClose}>
+      <textarea
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        style={styles.textarea}
+        placeholder='[{"op":"add","path":"/metadata/labels/test","value":"123"}]'
+      />
+
+      <button
+        style={styles.button}
+        onClick={() => setConfirmOpen(true)}
+        >
+        Apply Patch
+      </button>
+      {confirmOpen && (
+        <Modal title="Confirm patch" onClose={() => setConfirmOpen(false)}>
+          <div style={styles.confirmBox}>
+            <p>Вы уверены, что хотите применить изменения?</p>
+
+            <div style={styles.actions}>
+              <button
+                style={styles.cancel}
+                onClick={() => setConfirmOpen(false)}
+              >
+                Отмена
+              </button>
+
+              <button
+                style={styles.confirm}
+                onClick={async () => {
+                  await patchPodYaml(namespace, podName, value);
+                  setConfirmOpen(false);
+                  onClose();
+                }}
+              >
+                Подтвердить
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </Modal>
+
+
+  );
+}
+
+const styles = {
+  textarea: {
+    width: "95%",
+    height: "70%",
+    background: "#020617",
+    color: "#e2e8f0",
+    padding: "12px",
+    borderRadius: "8px",
+    fontFamily: "monospace",
+  },
+  button: {
+    marginTop: "12px",
+    padding: "10px",
+    background: "#2563eb",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+  },
+  confirmBox: {
+    color: "white",
+  },
+
+  actions: {
+    marginTop: "20px",
+    display: "flex",
+    gap: "10px",
+  },
+
+  cancel: {
+    padding: "8px 12px",
+    background: "#374151",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+  },
+
+  confirm: {
+    padding: "8px 12px",
+    background: "#dc2626",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+  },
+};
+==> ./modules/pods/components/HostBlock.tsx <==
+import { useNamespaces } from "../../../shared/ui/hooks/useNamespaces";
+import NamespaceBlock from "./NamespaceBlock";
+
+export default function HostBlock({
+  host,
+  selectedPodIds,
+  onToggle,
+}: any) {
+  const { data: namespaces = [] } = useNamespaces(host);
+
+  return (
+    <div style={styles.host}>
+      <h2 style={styles.title}>{host}</h2>
+
+      {namespaces.map((namespace: string) => (
+        <NamespaceBlock
+          host={host}
+          key={namespace}
+          namespace={namespace}
+          selectedPodIds={selectedPodIds}
+          onToggle={onToggle}
+        />
+      ))}
+    </div>
+  );
+}
+
+const styles = {
+  host: {
+    background: "#111827",
+    border: "1px solid #374151",
+    borderRadius: "14px",
+    padding: "18px",
+    marginBottom: "24px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+  },
+
+  title: {
+    marginBottom: "16px",
+    fontSize: "18px",
+    fontWeight: "600",
+    color: "#f8fafc",
+    paddingBottom: "8px",
+    borderBottom: "1px solid #1f2937",
+  },
+};
+==> ./modules/pods/components/YamlModal.tsx <==
+import { useQuery } from "@tanstack/react-query";
+import { getPodYaml } from "../api/podsApi";
+import Modal from "../../../shared/ui/Modal";
+
+type Props = {
+  namespace: string;
+  podName: string;
+  onClose: () => void;
+};
+
+function YamlModal({ namespace, podName, onClose }: Props) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["yaml", podName],
+    queryFn: () => getPodYaml(namespace, podName),
+  });
+
+  return (
+    <Modal title={`YAML: ${podName}`} onClose={onClose}>
+      {isLoading ? (
+        <div>Loading...</div>
+      ) : (
+        <pre style={styles.yaml}>{data}</pre>
+      )}
+    </Modal>
+  );
+}
+
+export default YamlModal;
+
+const styles = {
+  yaml: {
+    background: "#020617",
+    color: "#e2e8f0",
+    padding: "16px",
+    borderRadius: "8px",
+    fontSize: "13px",
+    whiteSpace: "pre-wrap" as const,
+  },
+};
+==> ./modules/pods/components/DropdownMenu.tsx <==
+import { useState, useRef, useEffect } from "react";
+
+type Props = {
+  children: React.ReactNode;
+  menu: React.ReactNode;
+};
+
+function DropdownMenu({ children, menu }: Props) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}
+    onMouseEnter={(e) =>
+      (e.currentTarget.style.background = "#374151")
+    }
+    onMouseLeave={(e) =>
+      (e.currentTarget.style.background = "transparent")
+    }>
+      
+      <div onClick={() => setOpen(!open)}>{children}</div>
+
+      {open && (
+        <div style={styles.menu}>
+          {menu}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default DropdownMenu;
+
+const styles = {
+  menu: {
+    position: "absolute" as const,
+    top: "100%",
+    right: 0,
+    background: "#1f2937",
+    borderRadius: "8px",
+    boxShadow: "0 6px 20px rgba(0,0,0,0.4)",
+    padding: "6px",
+    zIndex: 10,
+    minWidth: "120px",
+  },
+  item: {
+    padding: "8px 10px",
+    cursor: "pointer",
+    borderRadius: "6px",
+  },
+};
+==> ./modules/pods/components/PodCard.module.css <==
+/* Card.module.css */
+.card {
+  background: #1f2937;
+  padding: 6px;
+  border-radius: 10px;
+  color: white;
+  width: 220px;
+  height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+/* Теперь hover пишется стандартно и чисто */
+.card:hover {
+  /* transform: translateY(-3px); */
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+  background-color: #263246;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 2px;
+}
+
+.menuBtn {
+  cursor: pointer;
+  padding: 7px;
+  margin-left: auto;
+}
+
+.info {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.name, .status {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status {
+  font-size: 80%;
+  color: #cc0b08;
+}
+
+.menuItem {
+
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.menuItem:hover {
+  background: #374151;
+}
+
+.running { color: #30e81c; }
+.pending { color: #faea0a; }
+
+.card.selected {
+  border: 2px solid #2563eb; 
+  background-color: #1e293b; 
+}
+
+.checkbox {
+  cursor: pointer;
+  accent-color: #2563eb; 
+  flex-shrink: 0;
+}
+==> ./modules/pods/components/LogsModal.tsx <==
+import { useQuery } from "@tanstack/react-query";
+import { getPodLogs } from "../api/podsApi";
+import Modal from "../../../shared/ui/Modal";
+
+type Props = {
+  namespace: string;
+  podName: string;
+  onClose: () => void;
+};
+
+function LogsModal({ namespace, podName, onClose }: Props) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["logs", podName],
+    queryFn: () => getPodLogs(namespace, podName),
+  });
+
+  return (
+    <Modal title={`Logs: ${podName}`} onClose={onClose}>
+      {isLoading ? (
+        <div>Loading...</div>
+      ) : (
+        <pre style={styles.logs}>
+          {data?.join("\n")}
+        </pre>
+      )}
+    </Modal>
+  );
+}
+
+export default LogsModal;
+
+const styles = {
+  logs: {
+    background: "#020617",
+    color: "#22c55e",
+    padding: "16px",
+    borderRadius: "8px",
+    fontSize: "13px",
+    lineHeight: "1.4",
+    height: "100%",
+    overflow: "auto",
+  },
+};
+==> ./vite-env.d.ts <==
+/// <reference types="vite/client" />
+
+==> ./router/router.tsx <==
+import { createBrowserRouter } from "react-router-dom"
+import Layout from "../layout/layout"
+import PodsPage from "../modules/pods/PodsPage"
+import DeploymentsPage from "../modules/deployments/DeploymentsPage"
+
+export const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Layout />,
+    children: [
+      {
+        path: "pods",
+        element: <PodsPage />,
+      },
+      {
+        path: "deployments",
+        element: <DeploymentsPage />,
+      },
+    ],
+  },
+]);
+==> ./index.css <==
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+table {
+  background: transparent;
+  color: gray;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 8px;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, sans-serif;
+  background: #0f172a;
+}
+
+h1, h2, h3 {
+  color: white;
+}
+==> ./api/toolsApi.ts <==
+
+
+export const getNamespaces = async(): Promise<string[]> => {
+    const res = await fetch('/api/v1/namespaces');
+    if (!res.ok) {
+        throw new Error("Failed to fetch namespaces");
+    }
+
+    return res.json();
+}
+==> ./main.tsx <==
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+import "./index.css";
+
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
+
+const root = document.getElementById("root");
+
+if (!root) {
+  throw new Error("Root not found");
+}
+
+ReactDOM.createRoot(root).render(
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <App />
+    </QueryClientProvider>
+  </React.StrictMode>
+);
+==> ./App.tsx <==
+
+
+import './App.css'
+import { router } from './router/router';
+import { RouterProvider } from 'react-router-dom';
+
+function App() {
+  return <RouterProvider router={router} />;
+}
+
+export default App;
+
+==> ./App.css <==
+
+body {
+    margin: 0;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    background: radial-gradient(circle at 20% 30%, #1a2a6c, #2a4858, #000000);
+    color: white;
+}
+
+.container {
+    padding: 20px;
+}
+==> ./shared/ui/hooks/useNamespaces.ts <==
+import { useQuery } from "@tanstack/react-query";
+import { getNamespaces } from "../Api/toolsApi";
+
+export function useNamespaces(host: string) {
+  return useQuery<string[]>({
+    queryKey: ["namespaces", host],
+    queryFn: () => getNamespaces(host),
+    refetchInterval: 2500,
+    refetchOnWindowFocus: true,
+  });
+}
+==> ./shared/ui/hooks/useHosts.ts <==
+
+import { useQuery } from "@tanstack/react-query";
+import { getHosts } from "../Api/toolsApi"
+
+export function useHosts() {
+  const res = useQuery(
+    {
+      queryKey: ["hosts"],
+      queryFn: getHosts,
+      refetchInterval: 2500,
+      refetchOnWindowFocus: true
+    }
+  )
+  return res;
+}
+==> ./shared/ui/Modal.module.css <==
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 9999;
+  display: flex; /* Центрируем модалку */
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  background: #0f172a;
+  width: 100%;
+  max-width: 1500px; /* Ограничиваем ширину */
+  max-height: 90vh; /* Ограничиваем высоту */
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.header {
+  padding: 16px;
+  border-bottom: 1px solid #1f2937;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.close {
+  background: transparent;
+  color: white;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+}
+
+.close:hover {
+  opacity: 0.7;
+}
+
+.body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  color: white;
+}
+==> ./shared/ui/Modal.tsx <==
+import styles from "./Modal.module.css"
+
+type Props = {
+  title: string;
+  children: React.ReactNode;
+  onClose: () => void;
+};
+
+function Modal({ title, children, onClose }: Props) {
+  return (
+    <div className={styles.overlay} onClick={onClose}>
+      <div
+        className={styles.modal}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className={styles.header}>
+          <h2>{title}</h2>
+          <button className={styles.close} onClick={onClose}>
+            ✕
+          </button>
+        </div>
+
+        <div className={styles.body}>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+export default Modal;
+
+==> ./shared/ui/Api/toolsApi.ts <==
+
+export const getHosts = async(): Promise<string[]> =>
+    {   
+        const res = await fetch(
+            `/api/v1/getHosts`
+        )
+        return res.json();
+    }
+
+
+
+export async function getNamespaces(hosts: string){
+    const response = await fetch(
+        `/api/v1/namespaces?hosts=${hosts}`
+    )
+    return response.json();
+}
+==> ./layout/layout.tsx <==
+import { Link, Outlet } from "react-router-dom";
+import logo from "./Logo.png"
+
+
+function Layout() {
+  return (
+    <div>
+      <header style={styles.header}>
+        <div style={styles.logo}>
+          <img src={logo} alt="QUABER" style={styles.img} />
+          <span>Quaber</span>
+        </div>
+
+        <nav style={styles.nav}>
+          <Link style={styles.link} to="/pods">Pods</Link>
+          <Link style={styles.link} to="/deployments">Deployments</Link>
+        </nav>
+      </header>
+
+      <main style={styles.main}>
+        <Outlet />
+      </main>
+    </div>
+  );
+}
+
+export default Layout;
+
+const styles = {
+  img: {
+    height: "50px", 
+    width: "auto",
+    display: "block"
+  },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    padding: "15px 30px",
+    background: "linear-gradient(90deg, #1e3c72, #2a5298)",
+    color: "white",
+  },
+  logo: {
+    display: "flex",
+    fontWeight: "bold",
+    fontSize: "40px",
+    alignItems: "center",
+    gap: "15px"
+  },
+  nav: {
+    display: "flex",
+    gap: "20px"
+  },
+  link: {
+    color: "white",
+    textDecoration: "none"
+  },
+  main: {
+    padding: "20px"
+  }
+};

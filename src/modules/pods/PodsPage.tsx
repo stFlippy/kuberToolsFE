@@ -1,111 +1,91 @@
-import { useAllPods } from "./hooks/useAllPods";
-import NamespaceBlock from "./components/NamespaceBlock";
-import { useState } from "react";
-import { restartSelected } from "./api/podsApi";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useHosts } from "../../shared/ui/hooks/useHosts";
 import HostBlock from "./components/HostBlock";
-// import { useNamespaces } from "../../shared/ui/hooks/useNamespaces";
+import { restartSelected } from "./api/podsApi";
+import { useAllPods } from "./hooks/useAllPods";
 
 function PodsPage() {
-  const { data = [], isLoading } = useAllPods();
+  const { data: hosts = [], isLoading } = useHosts();
+
   const [selectedPodIds, setSelectedPodIds] = useState<string[]>([]);
-  const hosts = useHosts().data;
-  console.log(hosts)
 
   useEffect(() => {
-    if (data.length === 0) return;
-    const activeIds = new Set(data.map((pod: any) => `${pod.namespace}/${pod.name}`));
-    setSelectedPodIds((prev) => prev.filter((id) => activeIds.has(id)));
-  }, [data]);
+    setSelectedPodIds((prev) =>
+      prev.filter((id) => {
+        const parts = id.split("/");
+        return parts.length === 3;
+      })
+    );
+  }, []);
 
   if (isLoading) return <div>Loading...</div>;
 
-  const togglePod = (ns: string, name: string) => {
-    const id = `${ns}/${name}`;
-    setSelectedPodIds(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+  const togglePod = (
+    host: string,
+    namespace: string,
+    podName: string
+  ) => {
+    const id = `${host}/${namespace}/${podName}`;
+
+    setSelectedPodIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((i) => i !== id)
+        : [...prev, id]
     );
   };
 
-  const handleRestartSelected = async () => {
-    // 1. Собираем объект для отправки
-    const payload: Record<string, string[]> = {};
-    
-    selectedPodIds.forEach(id => {
-      const [ns, name] = id.split('/');
-      if (!payload[ns]) payload[ns] = [];
-      payload[ns].push(name);
+  const handleDropSelected = async () => {
+    if (selectedPodIds.length === 0) return;
+
+    const confirmed = window.confirm(
+      "Подтвердить удаление выбранных pod?"
+    );
+
+    if (!confirmed) return;
+
+    const payload: Record<string, Record<string, string[]>
+      > = {};
+
+    selectedPodIds.forEach((id) => {
+      const [host, namespace, podName] = id.split("/");
+
+      if (!payload[host]) {
+        payload[host] = {};
+      }
+
+      if (!payload[host][namespace]) {
+        payload[host][namespace] = [];
+      }
+
+      payload[host][namespace].push(podName);
     });
 
-    // 2. Отправляем в API
-    try {
-      const response = await restartSelected(payload);
-      if (response.ok) {
-        alert("Запрос на рестарт отправлен");
-        setSelectedPodIds([]); // Очищаем выбор
-        // Если есть react-query, можно инвалидировать кеш:
-        // queryClient.invalidateQueries({ queryKey: ["allPods"] });
-      }
-    } catch (err) {
-      console.error("Ошибка рестарта:", err);
-    }
+    await restartSelected(payload);
+
+    setSelectedPodIds([]);
   };
 
-  // группировка по namespace
-  const grouped = data.reduce((acc: any, pod: any) => {
-    if (!acc[pod.namespace]) {
-      acc[pod.namespace] = [];
-    }
-
-    acc[pod.namespace].push(pod);
-    return acc;
-  }, {});
-
-
-  
   return (
-    <div>
-      {/* <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}> */}
+    <div style={styles.page}>
+      <h1 style={styles.title}>Pods</h1>
 
-      <div style={styles.page}>
-        <h1>Pods</h1>
-        {selectedPodIds.length > 0 && (
-          <button 
-            onClick={handleRestartSelected}
-            style={{ padding: '8px 16px', background: '#ef4444', color: 'white', borderRadius: '6px', cursor: 'pointer', border: 'none' }}
-          >
-            Restart Selected ({selectedPodIds.length})
-          </button>
-        )}
+      {selectedPodIds.length > 0 && (
+        <button
+          style={styles.restartButton}
+          onClick={handleDropSelected}
+        >
+          Drop Selected ({selectedPodIds.length})
+        </button>
+      )}
 
-      <h3>Pods selected : {selectedPodIds.length}</h3>
-
-      {Object.entries(grouped).map(([ns, pods]: any) => (
-        <NamespaceBlock
-          key={ns} 
-          namespace={ns} 
-          pods={pods} 
-          selectedPodIds={selectedPodIds} // Передаем список выбранных
-          onToggle={togglePod}            // Передаем саму функцию клика
+      {hosts.map((host: string) => (
+        <HostBlock
+          key={host}
+          host={host}
+          selectedPodIds={selectedPodIds}
+          onToggle={togglePod}
         />
       ))}
-      <div>
-        {
-          hosts?.map(
-            (host:string) => {
-              return (
-                <HostBlock
-                  key={ host }
-                  host= { host }
-                  />
-              )
-            }
-          )
-        }
-      </div>
-
-      </div>
     </div>
   );
 }
@@ -118,5 +98,21 @@ const styles = {
     background: "#020617",
     minHeight: "100vh",
     color: "#e5e7eb",
+  },
+
+  title: {
+    marginBottom: "24px",
+    fontSize: "28px",
+    fontWeight: "700",
+  },
+
+  restartButton: {
+    marginBottom: "20px",
+    padding: "10px 16px",
+    background: "#374151",
+    color: "white",
+    border: "1px solid #4b5563",
+    borderRadius: "8px",
+    cursor: "pointer",
   },
 };
