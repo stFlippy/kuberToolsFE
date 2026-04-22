@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useHosts } from "../../shared/ui/hooks/useHosts";
 import HostBlock from "./components/HostBlock";
 import { restartSelected } from "./api/podsApi";
-import { useAllPods } from "./hooks/useAllPods";
+// import { useAllPods } from "./hooks/useAllPods";
 
 function PodsPage() {
   const { data: hosts = [], isLoading } = useHosts();

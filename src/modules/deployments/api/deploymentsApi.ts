@@ -10,19 +10,20 @@ export async function getNamespaces(): Promise<string[]> {
 }
 
 
-export async function getDeployments(namespace: string) {
+export async function getDeployments(namespace: string, host: string) {
   const res = await fetch(
-    `/api/v1/deployments?namespace=${namespace}`
+    `/api/v1/deployments?namespace=${namespace}&host=${host}`
   );
   return res.json();
 }
 
 export async function getDeploymentYaml(
   namespace: string,
-  name: string
+  name: string,
+  host: string
 ) {
   const res = await fetch(
-    `/api/v1/deployments/yaml?namespace=${namespace}&deploymentName=${name}`
+    `/api/v1/deployments/yaml?namespace=${namespace}&deploymentName=${name}&host=${host}`
   );
   return res.text();
 }
@@ -30,10 +31,11 @@ export async function getDeploymentYaml(
 export async function patchDeploymentYaml(
   namespace: string,
   name: string,
-  body: string
+  body: string,
+  host: string
 ) {
   return fetch(
-    `/api/v1/deployments/yaml?namespace=${namespace}&deploymentName=${name}`,
+    `/api/v1/deployments/yaml?namespace=${namespace}&deploymentName=${name}&host=${host}`,
     {
       method: "PATCH",
       headers: {
@@ -45,17 +47,18 @@ export async function patchDeploymentYaml(
 }
 
 export async function setReplicas(
+  host: string,
   namespace: string,
   name: string,
   replicas: number
 ) {
   return fetch(
-    `/api/v1/deployments/setReplicas?namespace=${namespace}&deploymentName=${name}&replicasValue=${replicas}`
+    `/api/v1/deployments/setReplicas?namespace=${namespace}&deploymentName=${name}&replicasValue=${replicas}&host=${host}`
   );
 }
 
-export async function restartNamespace(namespace: string) {
+export async function restartNamespace(namespace: string, host: string) {
   return fetch(
-    `/api/v1/deployments/restartNamespacedPods?namespace=${namespace}`
+    `/api/v1/deployments/restartNamespacedPods?namespace=${namespace}&host=${host}`
   );
 }

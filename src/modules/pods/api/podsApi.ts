@@ -1,8 +1,8 @@
 
 
-export const getPods = async (namespace: string) => {
+export const getPods = async (namespace: string, host: string) => {
   const res = await fetch(
-    `/api/v1/pods?namespace=${namespace}`
+    `/api/v1/pods?namespace=${namespace}&host=${host}`
   );
 
   if (!res.ok) throw new Error("Failed to fetch pods");
@@ -10,17 +10,17 @@ export const getPods = async (namespace: string) => {
   return res.json();
 };
 
-export const restartPod = async (namespace: string, podName: string) => {
+export const restartPod = async (namespace: string, podName: string, host: string) => {
   const res = await fetch(
-    `/api/v1/pods/restartPod?namespace=${namespace}&podName=${podName}`
+    `/api/v1/pods/restartPod?namespace=${namespace}&podName=${podName}&host=${host}`
   );
 
   if (!res.ok) throw new Error("Failed to restart pod");
 };
 
-export const getPodLogs = async (namespace: string, podName: string) => {
+export const getPodLogs = async (namespace: string, podName: string, host: string) => {
   const res = await fetch(
-    `/api/v1/pods/log?namespace=${namespace}&podName=${podName}`
+    `/api/v1/pods/log?namespace=${namespace}&podName=${podName}&host=${host}`
   );
 
   if (!res.ok) throw new Error("Failed to fetch logs");
@@ -28,9 +28,9 @@ export const getPodLogs = async (namespace: string, podName: string) => {
   return res.json();
 };
 
-export const getPodYaml = async (namespace: string, podName: string) => {
+export const getPodYaml = async (namespace: string, podName: string, host: string) => {
   const res = await fetch(
-    `/api/v1/pods/yaml?namespace=${namespace}&podName=${podName}`
+    `/api/v1/pods/yaml?namespace=${namespace}&podName=${podName}&host=${host}`
   );
 
   if (!res.ok) throw new Error("Failed to fetch yaml");
@@ -41,10 +41,11 @@ export const getPodYaml = async (namespace: string, podName: string) => {
 export async function patchPodYaml(
   namespace: string,
   podName: string,
-  body: string
+  body: string,
+  host: string
 ) {
   const res = await fetch(
-    `/api/v1/pods/yaml?namespace=${namespace}&podName=${podName}`,
+    `/api/v1/pods/yaml?namespace=${namespace}&podName=${podName}&host=${host}`,
     {
       method: "PATCH",
       headers: {

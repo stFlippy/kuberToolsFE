@@ -21,7 +21,7 @@ function NamespaceBlock({
 }: Props) {
   const { data: pods = [] } = useQuery({
     queryKey: ["pods", namespace],
-    queryFn: () => getPods(namespace),
+    queryFn: () => getPods(namespace, host),
     refetchInterval: 2500,
     refetchOnWindowFocus: true,
   });
