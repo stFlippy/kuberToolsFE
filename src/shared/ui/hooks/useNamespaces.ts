@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getNamespaces } from "../Api/toolsApi";
+import { getNamespaces } from "../../api/toolsApi";
 
 export function useNamespaces(host: string) {
   return useQuery<string[]>({

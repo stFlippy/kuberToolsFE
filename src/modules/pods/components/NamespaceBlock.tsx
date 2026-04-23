@@ -20,7 +20,7 @@ function NamespaceBlock({
   onToggle,
 }: Props) {
   const { data: pods = [] } = useQuery({
-    queryKey: ["pods", namespace],
+    queryKey: ["pods", namespace, host],
     queryFn: () => getPods(namespace, host),
     refetchInterval: 2500,
     refetchOnWindowFocus: true,
@@ -42,6 +42,7 @@ function NamespaceBlock({
               pod={{
                 ...pod,
                 namespace,
+                host,
               }}
               isSelected={selectedPodIds.includes(
                 `${host}/${namespace}/${pod.name}`

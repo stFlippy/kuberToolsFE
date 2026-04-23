@@ -6,12 +6,13 @@ type Props = {
   namespace: string;
   podName: string;
   onClose: () => void;
+  host: string;
 };
 
-function YamlModal({ namespace, podName, onClose }: Props) {
+function YamlModal({ namespace, podName, host, onClose }: Props) {
   const { data, isLoading } = useQuery({
     queryKey: ["yaml", podName],
-    queryFn: () => getPodYaml(namespace, podName),
+    queryFn: () => getPodYaml(namespace, podName, host),
   });
 
   return (

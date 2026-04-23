@@ -23,7 +23,7 @@ function PodCard({ pod, isSelected, onToggle }: Props) {
 
   const mutation = useMutation(
     {
-    mutationFn: () => restartPod(pod.namespace, pod.name),
+    mutationFn: () => restartPod(pod.namespace, pod.name, pod.host),
     onSuccess: async () => {
         await new Promise((r) => setTimeout(r, 1000));
         await queryClient.invalidateQueries({ queryKey: ["allPods"],  });
@@ -36,16 +36,15 @@ function formatDate(dateStr: string) {
   const date = new Date(dateStr);
 
   return date.toLocaleString(undefined, {
-    hour12: false,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
-;
+      hour12: false,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  };
 
   return (
     <div
@@ -131,6 +130,7 @@ function formatDate(dateStr: string) {
 
       {showLogs && (
         <LogsModal
+          host={pod.host}
           namespace={pod.namespace}
           podName={pod.name}
           onClose={() => setShowLogs(false)}
@@ -139,6 +139,7 @@ function formatDate(dateStr: string) {
 
       {showYaml && (
         <YamlModal
+          host={pod.host}
           namespace={pod.namespace}
           podName={pod.name}
           onClose={() => setShowYaml(false)}
@@ -146,6 +147,7 @@ function formatDate(dateStr: string) {
       )}
       {showPatch && (
         <PatchModal
+          host={pod.host}
           namespace={pod.namespace}
           podName={pod.name}
           onClose={() => setShowPatch(false)}

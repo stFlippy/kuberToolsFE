@@ -6,18 +6,20 @@ type Props = {
   namespace: string;
   podName: string;
   onClose: () => void;
+  host: string;
 };
 
 export default function PatchModal({
   namespace,
   podName,
   onClose,
+  host,
 }: Props) {
   const [value, setValue] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleSubmit = async () => {
-    await patchPodYaml(namespace, podName, value);
+    await patchPodYaml(namespace, podName, host, value);
     onClose();
   };
 
@@ -52,7 +54,7 @@ export default function PatchModal({
               <button
                 style={styles.confirm}
                 onClick={async () => {
-                  await patchPodYaml(namespace, podName, value);
+                  await patchPodYaml(namespace, podName, value, host);
                   setConfirmOpen(false);
                   onClose();
                 }}

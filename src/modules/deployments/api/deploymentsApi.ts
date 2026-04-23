@@ -1,14 +1,4 @@
 
-export async function getHosts(): Promise<string[]> {
-  const res = await fetch(`/api/v1/getHosts`);
-  return res.json();
-}
-
-export async function getNamespaces(): Promise<string[]> {
-  const res = await fetch(`/api/v1/namespaces`);
-  return res.json();
-}
-
 
 export async function getDeployments(namespace: string, host: string) {
   const res = await fetch(

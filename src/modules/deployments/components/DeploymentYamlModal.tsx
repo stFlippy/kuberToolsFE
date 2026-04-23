@@ -11,11 +11,13 @@ type Props = {
   namespace: string;
   name: string;
   onClose: () => void;
+  host: string;
 };
 
 export default function DeploymentYamlModal({
   namespace,
   name,
+  host,
   onClose,
 }: Props) {
   const [yaml, setYaml] = useState("");
@@ -23,7 +25,7 @@ export default function DeploymentYamlModal({
   const qc = useQueryClient();
 
   useEffect(() => {
-    getDeploymentYaml(namespace, name).then(setYaml);
+    getDeploymentYaml(namespace, name, host).then(setYaml);
   }, []);
 
   return (
@@ -64,10 +66,10 @@ export default function DeploymentYamlModal({
 
             <button
               onClick={async () => {
-                await patchDeploymentYaml(namespace, name, yaml);
+                await patchDeploymentYaml(namespace, name, yaml, host);
 
                 qc.invalidateQueries({
-                  queryKey: ["deployments", namespace],
+                  queryKey: ["deployments", namespace, host],
                 });
 
                 setConfirmOpen(false);

@@ -2,11 +2,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { getDeployments } from "../api/deploymentsApi";
 
-export function useDeployments(namespace: string) {
+export function useDeployments(
+  namespace: string,
+  host: string
+) {
   return useQuery({
-    queryKey: ["deployments", namespace],
-    queryFn: () => getDeployments(namespace),
-    enabled: !!namespace,
+    queryKey: ["deployments", namespace, host],
+    queryFn: () => getDeployments(namespace, host),
+    enabled: !!namespace && !!host,
     refetchInterval: 2500,
     refetchOnWindowFocus: true,
   });
@@ -24,19 +27,20 @@ export async function getNamespaces(): Promise<string[]> {
 }
 
 
-export async function getDeployments(namespace: string) {
+export async function getDeployments(namespace: string, host: string) {
   const res = await fetch(
-    `/api/v1/deployments?namespace=${namespace}`
+    `/api/v1/deployments?namespace=${namespace}&host=${host}`
   );
   return res.json();
 }
 
 export async function getDeploymentYaml(
   namespace: string,
-  name: string
+  name: string,
+  host: string
 ) {
   const res = await fetch(
-    `/api/v1/deployments/yaml?namespace=${namespace}&deploymentName=${name}`
+    `/api/v1/deployments/yaml?namespace=${namespace}&deploymentName=${name}&host=${host}`
   );
   return res.text();
 }
@@ -44,10 +48,11 @@ export async function getDeploymentYaml(
 export async function patchDeploymentYaml(
   namespace: string,
   name: string,
-  body: string
+  body: string,
+  host: string
 ) {
   return fetch(
-    `/api/v1/deployments/yaml?namespace=${namespace}&deploymentName=${name}`,
+    `/api/v1/deployments/yaml?namespace=${namespace}&deploymentName=${name}&host=${host}`,
     {
       method: "PATCH",
       headers: {
@@ -59,18 +64,19 @@ export async function patchDeploymentYaml(
 }
 
 export async function setReplicas(
+  host: string,
   namespace: string,
   name: string,
   replicas: number
 ) {
   return fetch(
-    `/api/v1/deployments/setReplicas?namespace=${namespace}&deploymentName=${name}&replicasValue=${replicas}`
+    `/api/v1/deployments/setReplicas?namespace=${namespace}&deploymentName=${name}&replicasValue=${replicas}&host=${host}`
   );
 }
 
-export async function restartNamespace(namespace: string) {
+export async function restartNamespace(namespace: string, host: string) {
   return fetch(
-    `/api/v1/deployments/restartNamespacedPods?namespace=${namespace}`
+    `/api/v1/deployments/restartNamespacedPods?namespace=${namespace}&host=${host}`
   );
 }
 ==> ./modules/deployments/components/DeploymentRow.module.css <==
@@ -141,27 +147,29 @@ export async function restartNamespace(namespace: string) {
 import { useDeployments } from "../hooks/useDeployments";
 import DeploymentRow from "./DeploymentRow";
 
-export default function NamespaceBlock({ namespace }: any) {
-  const { data } = useDeployments(namespace);
+export default function NamespaceBlock({ namespace, host }: any) 
+  {
+    const { data } = useDeployments(namespace, host);
 
-  return (
-    <div style={styles.block}>
-      <h3 style={styles.title}>{namespace}</h3>
+    return (
+      <div style={styles.block}>
+        <h3 style={styles.title}>{namespace}</h3>
 
-      {!data || data.length === 0 ? (
-        <div style={styles.empty}>empty namespace</div>
-      ) : (
-        data.map((d: any) => (
-          <DeploymentRow
-            key={d.name}
-            deployment={d}
-            namespace={namespace}
-          />
-        ))
-      )}
-    </div>
-  );
-}
+        {!data || data.length === 0 ? (
+          <div style={styles.empty}>empty namespace</div>
+        ) : (
+          data.map((d: any) => (
+            <DeploymentRow
+              key={d.name}
+              deployment={d}
+              namespace={namespace}
+              host={host}
+            />
+          ))
+        )}
+      </div>
+    );
+  }
 
 const styles = {
   block: {
@@ -198,11 +206,13 @@ type Props = {
   namespace: string;
   name: string;
   onClose: () => void;
+  host: string;
 };
 
 export default function DeploymentYamlModal({
   namespace,
   name,
+  host,
   onClose,
 }: Props) {
   const [yaml, setYaml] = useState("");
@@ -210,7 +220,7 @@ export default function DeploymentYamlModal({
   const qc = useQueryClient();
 
   useEffect(() => {
-    getDeploymentYaml(namespace, name).then(setYaml);
+    getDeploymentYaml(namespace, name, host).then(setYaml);
   }, []);
 
   return (
@@ -251,7 +261,7 @@ export default function DeploymentYamlModal({
 
             <button
               onClick={async () => {
-                await patchDeploymentYaml(namespace, name, yaml);
+                await patchDeploymentYaml(namespace, name, yaml, host);
 
                 qc.invalidateQueries({
                   queryKey: ["deployments", namespace],
@@ -301,6 +311,7 @@ import styles from "./DeploymentRow.module.css"
 export default function DeploymentRow({
   deployment,
   namespace,
+  host,
 }: any) {
   const [value, setValue] = useState("0");
   const isSame = Number(value) === deployment.replicas;
@@ -315,7 +326,12 @@ export default function DeploymentRow({
 
     if (!confirm("Применить новое количество реплик?")) return;
 
-    await setReplicas(namespace, deployment.name, Number(value));
+    await setReplicas(
+            host,
+            namespace,
+            deployment.name,
+            Number(value)
+          );
 
     setValue("0");
 
@@ -329,7 +345,7 @@ export default function DeploymentRow({
   const restart = async () => {
     if (!confirm("Перезапустить все pod'ы namespace?")) return;
 
-    await restartNamespace(namespace);
+    await restartNamespace(namespace, host);
     qc.invalidateQueries({
       queryKey: ["deployments", namespace],
     });
@@ -396,6 +412,7 @@ export default function DeploymentRow({
         <DeploymentYamlModal
           namespace={namespace}
           name={deployment.name}
+          host={host}
           onClose={() => setShowYaml(false)}
         />
       )}
@@ -417,10 +434,13 @@ export default function HostBlock({ host }: any) {
         <h2 style={styles.title}>{host}</h2>
         {data?.map((namespace: any) => {
 
-              return <NamespaceBlock 
-                key={namespace} 
-                namespace={namespace}
-              />
+              return (
+                <NamespaceBlock
+                  key={namespace}
+                  namespace={namespace}
+                  host={host}
+                />
+              )
             }
           )
         }
@@ -508,12 +528,13 @@ import { useState, useEffect } from "react";
 import { useHosts } from "../../shared/ui/hooks/useHosts";
 import HostBlock from "./components/HostBlock";
 import { restartSelected } from "./api/podsApi";
+// import { useAllPods } from "./hooks/useAllPods";
 
 function PodsPage() {
   const { data: hosts = [], isLoading } = useHosts();
 
   const [selectedPodIds, setSelectedPodIds] = useState<string[]>([]);
-  
+
   useEffect(() => {
     setSelectedPodIds((prev) =>
       prev.filter((id) => {
@@ -624,9 +645,9 @@ const styles = {
 ==> ./modules/pods/api/podsApi.ts <==
 
 
-export const getPods = async (namespace: string) => {
+export const getPods = async (namespace: string, host: string) => {
   const res = await fetch(
-    `/api/v1/pods?namespace=${namespace}`
+    `/api/v1/pods?namespace=${namespace}&host=${host}`
   );
 
   if (!res.ok) throw new Error("Failed to fetch pods");
@@ -634,17 +655,17 @@ export const getPods = async (namespace: string) => {
   return res.json();
 };
 
-export const restartPod = async (namespace: string, podName: string) => {
+export const restartPod = async (namespace: string, podName: string, host: string) => {
   const res = await fetch(
-    `/api/v1/pods/restartPod?namespace=${namespace}&podName=${podName}`
+    `/api/v1/pods/restartPod?namespace=${namespace}&podName=${podName}&host=${host}`
   );
 
   if (!res.ok) throw new Error("Failed to restart pod");
 };
 
-export const getPodLogs = async (namespace: string, podName: string) => {
+export const getPodLogs = async (namespace: string, podName: string, host: string) => {
   const res = await fetch(
-    `/api/v1/pods/log?namespace=${namespace}&podName=${podName}`
+    `/api/v1/pods/log?namespace=${namespace}&podName=${podName}&host=${host}`
   );
 
   if (!res.ok) throw new Error("Failed to fetch logs");
@@ -652,9 +673,9 @@ export const getPodLogs = async (namespace: string, podName: string) => {
   return res.json();
 };
 
-export const getPodYaml = async (namespace: string, podName: string) => {
+export const getPodYaml = async (namespace: string, podName: string, host: string) => {
   const res = await fetch(
-    `/api/v1/pods/yaml?namespace=${namespace}&podName=${podName}`
+    `/api/v1/pods/yaml?namespace=${namespace}&podName=${podName}&host=${host}`
   );
 
   if (!res.ok) throw new Error("Failed to fetch yaml");
@@ -665,10 +686,11 @@ export const getPodYaml = async (namespace: string, podName: string) => {
 export async function patchPodYaml(
   namespace: string,
   podName: string,
-  body: string
+  body: string,
+  host: string
 ) {
   const res = await fetch(
-    `/api/v1/pods/yaml?namespace=${namespace}&podName=${podName}`,
+    `/api/v1/pods/yaml?namespace=${namespace}&podName=${podName}&host=${host}`,
     {
       method: "PATCH",
       headers: {
@@ -708,7 +730,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import styles from "./PodCard.module.css"
 
 type Props = {
-  pod: any;
+  pod: any;s
   isSelected: boolean;
   onToggle: () => void;
 };
@@ -723,7 +745,7 @@ function PodCard({ pod, isSelected, onToggle }: Props) {
 
   const mutation = useMutation(
     {
-    mutationFn: () => restartPod(pod.namespace, pod.name),
+    mutationFn: () => restartPod(pod.namespace, pod.name, pod.host),
     onSuccess: async () => {
         await new Promise((r) => setTimeout(r, 1000));
         await queryClient.invalidateQueries({ queryKey: ["allPods"],  });
@@ -831,6 +853,7 @@ function formatDate(dateStr: string) {
 
       {showLogs && (
         <LogsModal
+          host={pod.host}
           namespace={pod.namespace}
           podName={pod.name}
           onClose={() => setShowLogs(false)}
@@ -839,6 +862,7 @@ function formatDate(dateStr: string) {
 
       {showYaml && (
         <YamlModal
+          host={pod.host}
           namespace={pod.namespace}
           podName={pod.name}
           onClose={() => setShowYaml(false)}
@@ -846,6 +870,7 @@ function formatDate(dateStr: string) {
       )}
       {showPatch && (
         <PatchModal
+          host={pod.host}
           namespace={pod.namespace}
           podName={pod.name}
           onClose={() => setShowPatch(false)}
@@ -880,7 +905,7 @@ function NamespaceBlock({
 }: Props) {
   const { data: pods = [] } = useQuery({
     queryKey: ["pods", namespace],
-    queryFn: () => getPods(namespace),
+    queryFn: () => getPods(namespace, host),
     refetchInterval: 2500,
     refetchOnWindowFocus: true,
   });
@@ -901,6 +926,7 @@ function NamespaceBlock({
               pod={{
                 ...pod,
                 namespace,
+                host,
               }}
               isSelected={selectedPodIds.includes(
                 `${host}/${namespace}/${pod.name}`
@@ -957,18 +983,20 @@ type Props = {
   namespace: string;
   podName: string;
   onClose: () => void;
+  host: string;
 };
 
 export default function PatchModal({
   namespace,
   podName,
   onClose,
+  host,
 }: Props) {
   const [value, setValue] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleSubmit = async () => {
-    await patchPodYaml(namespace, podName, value);
+    await patchPodYaml(namespace, podName, host, value);
     onClose();
   };
 
@@ -1003,7 +1031,7 @@ export default function PatchModal({
               <button
                 style={styles.confirm}
                 onClick={async () => {
-                  await patchPodYaml(namespace, podName, value);
+                  await patchPodYaml(namespace, podName, value, host);
                   setConfirmOpen(false);
                   onClose();
                 }}
@@ -1123,12 +1151,13 @@ type Props = {
   namespace: string;
   podName: string;
   onClose: () => void;
+  host: string;
 };
 
-function YamlModal({ namespace, podName, onClose }: Props) {
+function YamlModal({ namespace, podName, host, onClose }: Props) {
   const { data, isLoading } = useQuery({
     queryKey: ["yaml", podName],
-    queryFn: () => getPodYaml(namespace, podName),
+    queryFn: () => getPodYaml(namespace, podName, host),
   });
 
   return (
@@ -1303,12 +1332,13 @@ type Props = {
   namespace: string;
   podName: string;
   onClose: () => void;
+  host: string;
 };
 
-function LogsModal({ namespace, podName, onClose }: Props) {
+function LogsModal({ namespace, podName, host, onClose }: Props) {
   const { data, isLoading } = useQuery({
     queryKey: ["logs", podName],
-    queryFn: () => getPodLogs(namespace, podName),
+    queryFn: () => getPodLogs(namespace, podName, host),
   });
 
   return (
@@ -1388,17 +1418,6 @@ body {
 h1, h2, h3 {
   color: white;
 }
-==> ./api/toolsApi.ts <==
-
-
-export const getNamespaces = async(): Promise<string[]> => {
-    const res = await fetch('/api/v1/namespaces');
-    if (!res.ok) {
-        throw new Error("Failed to fetch namespaces");
-    }
-
-    return res.json();
-}
 ==> ./main.tsx <==
 import React from "react";
 import ReactDOM from "react-dom/client";
@@ -1447,9 +1466,33 @@ body {
 .container {
     padding: 20px;
 }
+==> ./shared/api/toolsApi.ts <==
+export async function getHosts(): Promise<string[]> {
+  const res = await fetch(`/api/v1/getHosts`);
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch hosts");
+  }
+
+  return res.json();
+}
+
+export async function getNamespaces(
+  host: string
+): Promise<string[]> {
+  const res = await fetch(
+    `/api/v1/namespaces?host=${host}`
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch namespaces");
+  }
+
+  return res.json();
+}
 ==> ./shared/ui/hooks/useNamespaces.ts <==
 import { useQuery } from "@tanstack/react-query";
-import { getNamespaces } from "../Api/toolsApi";
+import { getNamespaces } from "../../api/toolsApi";
 
 export function useNamespaces(host: string) {
   return useQuery<string[]>({
@@ -1462,7 +1505,7 @@ export function useNamespaces(host: string) {
 ==> ./shared/ui/hooks/useHosts.ts <==
 
 import { useQuery } from "@tanstack/react-query";
-import { getHosts } from "../Api/toolsApi"
+import { getHosts } from "../../api/toolsApi"
 
 export function useHosts() {
   const res = useQuery(
@@ -1566,24 +1609,6 @@ function Modal({ title, children, onClose }: Props) {
 
 export default Modal;
 
-==> ./shared/ui/Api/toolsApi.ts <==
-
-export const getHosts = async(): Promise<string[]> =>
-    {   
-        const res = await fetch(
-            `/api/v1/getHosts`
-        )
-        return res.json();
-    }
-
-
-
-export async function getNamespaces(hosts: string){
-    const response = await fetch(
-        `/api/v1/namespaces?hosts=${hosts}`
-    )
-    return response.json();
-}
 ==> ./layout/layout.tsx <==
 import { Link, Outlet } from "react-router-dom";
 import logo from "./Logo.png"

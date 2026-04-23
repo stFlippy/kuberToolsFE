@@ -11,10 +11,13 @@ export default function HostBlock({ host }: any) {
         <h2 style={styles.title}>{host}</h2>
         {data?.map((namespace: any) => {
 
-              return <NamespaceBlock 
-                key={namespace} 
-                namespace={namespace}
-              />
+              return (
+                <NamespaceBlock
+                  key={namespace}
+                  namespace={namespace}
+                  host={host}
+                />
+              )
             }
           )
         }

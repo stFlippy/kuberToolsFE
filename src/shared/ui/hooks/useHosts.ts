@@ -1,6 +1,6 @@
 
 import { useQuery } from "@tanstack/react-query";
-import { getHosts } from "../Api/toolsApi"
+import { getHosts } from "../../api/toolsApi"
 
 export function useHosts() {
   const res = useQuery(

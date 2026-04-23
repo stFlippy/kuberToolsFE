@@ -10,6 +10,7 @@ import styles from "./DeploymentRow.module.css"
 export default function DeploymentRow({
   deployment,
   namespace,
+  host,
 }: any) {
   const [value, setValue] = useState("0");
   const isSame = Number(value) === deployment.replicas;
@@ -24,12 +25,17 @@ export default function DeploymentRow({
 
     if (!confirm("Применить новое количество реплик?")) return;
 
-    await setReplicas(namespace, deployment.name, Number(value));
+    await setReplicas(
+            host,
+            namespace,
+            deployment.name,
+            Number(value)
+          );
 
     setValue("0");
 
     qc.invalidateQueries({
-      queryKey: ["deployments", namespace],
+      queryKey: ["deployments", namespace, host],
     });
   };
 
@@ -38,7 +44,7 @@ export default function DeploymentRow({
   const restart = async () => {
     if (!confirm("Перезапустить все pod'ы namespace?")) return;
 
-    await restartNamespace(namespace);
+    await restartNamespace(namespace, host);
     qc.invalidateQueries({
       queryKey: ["deployments", namespace],
     });
@@ -105,6 +111,7 @@ export default function DeploymentRow({
         <DeploymentYamlModal
           namespace={namespace}
           name={deployment.name}
+          host={host}
           onClose={() => setShowYaml(false)}
         />
       )}

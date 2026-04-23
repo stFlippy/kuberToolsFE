@@ -1,27 +1,33 @@
 import { useDeployments } from "../hooks/useDeployments";
 import DeploymentRow from "./DeploymentRow";
 
-export default function NamespaceBlock({ namespace }: any) {
-  const { data } = useDeployments(namespace);
+export default function NamespaceBlock({ namespace, host }: any) 
+  {
+    type Props = {
+      namespace: string;
+      host: string;
+    };
+    const { data } = useDeployments(namespace, host);
 
-  return (
-    <div style={styles.block}>
-      <h3 style={styles.title}>{namespace}</h3>
+    return (
+      <div style={styles.block}>
+        <h3 style={styles.title}>{namespace}</h3>
 
-      {!data || data.length === 0 ? (
-        <div style={styles.empty}>empty namespace</div>
-      ) : (
-        data.map((d: any) => (
-          <DeploymentRow
-            key={d.name}
-            deployment={d}
-            namespace={namespace}
-          />
-        ))
-      )}
-    </div>
-  );
-}
+        {!data || data.length === 0 ? (
+          <div style={styles.empty}>empty namespace</div>
+        ) : (
+          data.map((d: any) => (
+            <DeploymentRow
+              key={d.name}
+              deployment={d}
+              namespace={namespace}
+              host={host}
+            />
+          ))
+        )}
+      </div>
+    );
+  }
 
 const styles = {
   block: {

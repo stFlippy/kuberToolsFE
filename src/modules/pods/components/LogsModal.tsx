@@ -6,12 +6,13 @@ type Props = {
   namespace: string;
   podName: string;
   onClose: () => void;
+  host: string;
 };
 
-function LogsModal({ namespace, podName, onClose }: Props) {
+function LogsModal({ namespace, podName, host, onClose }: Props) {
   const { data, isLoading } = useQuery({
     queryKey: ["logs", podName],
-    queryFn: () => getPodLogs(namespace, podName),
+    queryFn: () => getPodLogs(namespace, podName, host),
   });
 
   return (
