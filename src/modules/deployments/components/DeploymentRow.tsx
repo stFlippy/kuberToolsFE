@@ -1,17 +1,15 @@
 import { useState } from "react";
-import {
-  setReplicas,
-  restartNamespace,
-} from "../api/deploymentsApi";
+import { setReplicas, restartNamespace } from "../api/deploymentsApi";
 import { useQueryClient } from "@tanstack/react-query";
 import DeploymentYamlModal from "./DeploymentYamlModal";
 import styles from "./DeploymentRow.module.css"
 
 export default function DeploymentRow({
-  deployment,
-  namespace,
-  host,
-}: any) {
+        deployment,
+        namespace,
+        host,
+      }: any) 
+    {
   const [value, setValue] = useState("0");
   const isSame = Number(value) === deployment.replicas;
   const isDisabled = value === "0" || isSame;
